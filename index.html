@@ -52,7 +52,9 @@ input[dir=ltr]{text-align:left}
 .ad .b{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}.ad .n{display:flex;align-items:center;gap:8px}.ad .n b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:6px;text-align:right;color:var(--ink);font:inherit;width:100%;position:relative}
+button.kpi{cursor:pointer}button.kpi:after{content:'‹';position:absolute;left:14px;top:12px;color:var(--mute);font-size:20px}button.kpi:active,.tap:active{transform:scale(.98)}
+.tap{cursor:pointer;border-radius:14px;padding:6px;margin:-6px}.tap:hover{background:var(--card2)}tr.tap td{cursor:pointer}
 .kpi .l{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}.kpi .l i{width:30px;height:30px;border-radius:10px;background:var(--accBg);color:var(--acc);display:flex;align-items:center;justify-content:center}
 .kpi .l i svg{width:16px;height:16px}.kpi .v{font-size:24px;font-weight:700}.kpi .d{font-size:12px;font-weight:600}
 .up{color:var(--ok)}.down{color:var(--bad)}
@@ -134,7 +136,7 @@ const STATUS={live:['نشط','c-live'],pending:['بانتظار الموافقة
 const DAYS=['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
 const ri=(r,s=44)=>{const R=ROLES[r]||ROLES.custom;return `<span class="ri" style="width:${s}px;height:${s}px;background:${R.c}22;color:${R.c};border:1px solid ${R.c}55">${ic(R.i,s*.45)}</span>`};
 
-let me=null,ads=[],daily=[],banners=[],bdaily=[],statKind='ad',route='home',param=null,filter='all',range=7,members=[],audit=[];
+let me=null,ads=[],daily=[],banners=[],bdaily=[],statKind='ad',metric='clicks',itemKind='ad',itemRange=30,route='home',param=null,filter='all',range=7,members=[],audit=[];
 const can=p=>!!me&&me.perms.includes(p);
 function toast(t){const m=$('#toast');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3200)}
 function err(e){const m=String(e&&e.message||e);toast(({'invalid invitation':'الرمز غير صحيح أو انتهت صلاحيته','not allowed':'ليست لديك صلاحية لهذا','Invalid login credentials':'البريد أو كلمة المرور غير صحيحة','already a member':'هذا البريد مشرف بالفعل','live or paused ads need a manager':'الإعلان المنشور يعدّله المدير فقط'})[m]||('تعذّر: '+m))}
@@ -149,11 +151,11 @@ function totals(days,adId,src=daily){const keys=new Set();const now=new Date();f
  let im=0,cl=0;src.forEach(r=>{if(keys.has(r.day)&&(!adId||String(r.ad_id)===String(adId))){im+=+r.impressions;cl+=+r.clicks}});return{im,cl}}
 function series(days,kind,src=daily){const out=[];const now=new Date();for(let i=days-1;i>=0;i--){const d=new Date(now-i*864e5);const k=dayKey(d);
  out.push({label:days<=7?DAYS[new Date(k+'T12:00:00').getDay()]:k.slice(8),v:src.filter(r=>r.day===k).reduce((s,r)=>s+(+r[kind]),0)})}return out}
-function bars(s){const m=Math.max(1,...s.map(x=>x.v));return `<div class="bars" role="img" aria-label="${esc(s.map(x=>x.label+' '+x.v).join('، '))}">${s.map(x=>`<span><i style="height:${Math.max(4,x.v/m*88)}px"></i>${esc(x.label)}</span>`).join('')}</div>`}
-function delta(a,b){if(!b)return a?'<span class="d up num" dir="ltr">جديد</span>':'<span class="d num"> </span>';const p=(a-b)/b*100;return `<span class="d ${p>=0?'up':'down'} num" dir="ltr">${p>=0?'+':''}${p.toFixed(0)}%</span>`}
-function kpi(icon,label,value,d=''){return `<div class="kpi"><span class="l"><i>${ic(icon)}</i>${label}</span><span class="v num">${value}</span>${d}</div>`}
+function bars(s){const m=Math.max(1,...s.map(x=>x.v));const dense=s.length>10;return `<div class="bars" style="gap:${dense?3:8}px" role="img" aria-label="${esc(s.map(x=>x.label+' '+x.v).join('، '))}">${s.map((x,i)=>`<span style="min-width:0"><i style="height:${Math.max(4,x.v/m*88)}px${dense?';border-radius:4px':''}"></i><span class="num" style="font-size:${dense?9.5:11}px;visibility:${!dense||i%5===(s.length-1)%5?'visible':'hidden'}">${esc(x.label)}</span></span>`).join('')}</div>`}
+function delta(a,b){if(!b)return '<span class="d sub">لا مقارنة بعد</span>';const p=(a-b)/b*100;return `<span class="d ${p>=0?'up':'down'} num" dir="ltr">${p>=0?'+':''}${p.toFixed(0)}%</span>`}
+function kpi(icon,label,value,d='',open=''){return `<${open?'button':'div'} class="kpi" ${open}><span class="l"><i>${ic(icon)}</i>${label}</span><span class="v num">${value}</span>${d}</${open?'button':'div'}>`}
 function topBar(title,sub,action=''){return `<div class="top"><span class="t"><h1>${title}</h1>${sub?`<span class="sub">${sub}</span>`:''}</span>${action}</div>`}
-function backbar(title,extra=''){return `<div class="top" style="justify-content:flex-start"><button class="icon" data-go="${route==='invite'?'members':route==='bedit'?'banners':'ads'}" aria-label="رجوع">${ic('back',18)}</button><h1 style="flex:1;font-size:22px">${title}</h1>${extra}</div>`}
+function backbar(title,extra=''){return `<div class="top" style="justify-content:flex-start"><button class="icon" data-go="${route==='invite'?'members':route==='bedit'?'banners':route==='live'?'home':route==='item'?(prevRoute||'stats'):'ads'}" aria-label="رجوع">${ic('back',18)}</button><h1 style="flex:1;font-size:22px">${title}</h1>${extra}</div>`}
 
 // ---------- data ----------
 async function loadAds(){if(!(can('view')||can('stats')))return ads=[];const{data,error}=await sb.from('ads').select('*').order('sort_order').order('created_at');if(error)throw error;ads=data||[]}
@@ -199,9 +201,9 @@ function homeView(){
  const hour=+new Date().toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'Asia/Riyadh'});
  return `${topBar(hour<12?'صباح الخير':'مساء الخير',me.name?esc(me.name)+' · '+ROLES[me.role]?.n:ROLES[me.role]?.n,`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`)}
  ${can('publish')&&pending.length?`<div class="notice"><span style="color:var(--warn)">${ic('bell')}</span><span style="flex:1;display:flex;flex-direction:column"><b>${pending.length===1?'بانتظار موافقتك':pending.length+' بانتظار موافقتك'}</b><span class="muted ellipsis">${pending[0].k==='bedit'?'بنر':'إعلان'} «${esc(pending[0].title)}»</span></span><button class="btn warn" data-go="${pending[0].k}" data-p="${esc(pending[0].id)}">مراجعة</button></div>`:''}
- ${can('stats')?`<div class="kpis">${kpi('live','نشطة الآن',live)}${kpi('eye','ظهور اليوم',fmt(t.im),delta(t.im,y.im))}${kpi('tap','ضغطات اليوم',fmt(t.cl),delta(t.cl,y.cl))}${kpi('pct','نسبة الضغط',ctr.toFixed(1)+'%',delta(ctr,yctr))}</div>
+ ${can('stats')?`<div class="kpis">${kpi('live','نشطة الآن',live,'<span class="d sub">إعلانات وبنرات</span>',can('view')?'data-go="live"':'')}${kpi('eye','ظهور اليوم',fmt(t.im),delta(t.im,y.im),'data-stats="1:impressions"')}${kpi('tap','ضغطات اليوم',fmt(t.cl),delta(t.cl,y.cl),'data-stats="1:clicks"')}${kpi('pct','نسبة الضغط',ctr.toFixed(1)+'%',delta(ctr,yctr),'data-stats="7:clicks"')}</div>
  <div class="card"><div class="top"><h2>الظهور — آخر 7 أيام</h2><span class="sub">الإعلانات والبنرات</span></div>${bars(series(7,'impressions',all))}</div>
- <div class="card"><h2>الأفضل أداءً</h2>${best.length?best.map(x=>`<div style="display:flex;align-items:center;gap:12px"><span class="thumb" style="width:${x.a.link?64:44}px;height:44px;border-radius:12px;background-image:url(&quot;${esc(imageUrl(x.a.image_path))}&quot;)"></span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><b class="ellipsis">${esc(x.a.title)}</b><span class="sub num">${fmt(x.im)} ظهور · ${fmt(x.cl)} ضغطة</span></span><b class="num" style="color:var(--ok)">${(x.cl/x.im*100).toFixed(1)}%</b></div>`).join(''):'<span class="muted">لا توجد بيانات بعد. تظهر هنا بعد أول ظهور للإعلانات في التطبيق.</span>'}</div>`
+ <div class="card"><h2>الأفضل أداءً</h2>${best.length?best.map(x=>`<div class="tap" data-item="${x.a.link?'banner':'ad'}:${esc(x.a.id)}" style="display:flex;align-items:center;gap:12px"><span class="thumb" style="width:${x.a.link?64:44}px;height:44px;border-radius:12px;background-image:url(&quot;${esc(imageUrl(x.a.image_path))}&quot;)"></span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><b class="ellipsis">${esc(x.a.title)}</b><span class="sub num">${fmt(x.im)} ظهور · ${fmt(x.cl)} ضغطة</span></span><b class="num" style="color:var(--ok)">${(x.cl/x.im*100).toFixed(1)}%</b></div>`).join(''):'<span class="muted">لا توجد بيانات بعد. تظهر هنا بعد أول ظهور للإعلانات في التطبيق.</span>'}</div>`
  :`<div class="kpis">${kpi('live','إعلانات نشطة',live)}${kpi('bell','بانتظار الموافقة',pending.length)}</div>`}`}
 
 // ---------- ads ----------
@@ -243,13 +245,18 @@ function editorView(){
  return `${backbar(isNew?'إعلان جديد':'تعديل الإعلان',`<span class="chip ${c}">${s}</span>`)}
  ${locked?`<div class="notice"><span style="color:var(--warn)">${ic('lock')}</span><span class="muted" style="flex:1">هذا الإعلان منشور. التعديل عليه للمدير فقط.</span></div>`:''}
  <div class="preview"><div class="top"><span class="muted" style="font-weight:600">معاينة داخل Keyvo</span><div class="seg" style="padding:2px;width:130px"><button type="button" data-pv="0" aria-pressed="${!previewLight}">داكن</button><button type="button" data-pv="1" aria-pressed="${previewLight}">فاتح</button></div></div>
- <div class="phone ${previewLight?'light':''}"><b style="font-size:12px">الإعدادات</b><div class="banner" id="pvBanner" style="${img?`background-image:url(&quot;${esc(img)}&quot;)`:''}"><span style="font-size:9px;opacity:.8">إعلان</span><b id="pvT" style="font-size:15px">${v('title','عنوان الإعلان')}</b><span id="pvD" style="font-size:10.5px;opacity:.92">${v('description')}</span><span class="cta" id="pvC">${v('cta','تحميل')}</span></div><div class="ph"></div><div class="ph"></div></div></div>
+ <div class="phone ${previewLight?'light':''}" style="width:260px"><b style="font-size:12px">الإعدادات</b><div class="ph" style="height:22px"></div>
+ <div style="display:flex;align-items:center;gap:8px;padding:9px;border-radius:12px;background:${previewLight?'#fff':'#162033'};border:1px solid ${previewLight?'#D5DFEE':'#26344E'}">
+ <span style="width:38px;height:38px;border-radius:10px;flex:none;background:${img?`url(&quot;${esc(img)}&quot;) center/cover`:'#26344E'}"></span>
+ <span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:7.5px;opacity:.6;font-weight:700">إعلان</span><b id="pvT" style="font-size:11px" class="ellipsis">${v('title','اسم التطبيق')}</b><span id="pvD" style="font-size:8.5px;opacity:.7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${v('description')}</span></span>
+ <span id="pvC" style="flex:none;padding:4px 9px;border-radius:9px;background:#1A5FE8;color:#fff;font-size:9px;font-weight:700">${v('cta','تحميل')}</span></div>
+ <div class="ph"></div><div class="ph"></div></div></div>
  <form id="adForm" class="card"${locked?' inert':''}>
- <label class="f">العنوان<span class="in"><input name="title" maxlength="80" required value="${v('title')}"></span></label>
+ <label class="f">اسم التطبيق<span class="in"><input name="title" maxlength="80" required value="${v('title')}"></span></label>
  <label class="f">الوصف<span class="in area"><textarea name="description" maxlength="240" rows="2">${v('description')}</textarea></span></label>
  <div class="row"><label class="f">نص الزر<span class="in"><input name="cta" maxlength="40" value="${v('cta','تحميل')}"></span></label><label class="f">مدة العرض (ثوانٍ)<span class="in"><input name="interval_seconds" type="number" min="5" max="60" value="${v('interval_seconds',6)}" class="num"></span></label></div>
  <label class="f">رابط Google Play<span class="in"><input name="destination" dir="ltr" required placeholder="https://play.google.com/store/apps/details?id=…" value="${v('destination')}"></span></label>
- <span class="f" style="font-size:13px;font-weight:600;color:var(--sub)">الصورة (PNG أو JPG أو WebP، حتى 2MB، يُفضّل 1200×630)</span>
+ <span class="f" style="font-size:13px;font-weight:600;color:var(--sub)">أيقونة التطبيق (مربعة، يُفضّل 512×512 — PNG أو JPG أو WebP حتى 2MB)</span>
  <label class="upload"><span class="thumb" style="width:50px;height:50px;border-radius:12px;${img?`background-image:url(&quot;${esc(img)}&quot;)`:''}">${img?'':ic('img')}</span><span style="flex:1;display:flex;flex-direction:column;font-size:13px;min-width:0"><b class="ellipsis" style="color:var(--ink)">${file?esc(file.name):a.image_path?'الصورة الحالية':'اختر صورة'}</b><span class="num" dir="ltr">${file?(file.size/1024).toFixed(0)+' KB':''}</span></span><span class="link">${img?'تغيير':'اختيار'}</span><input type="file" id="imgIn" accept="image/png,image/jpeg,image/webp" class="hidden"></label>
  </form>
  <div class="card"${locked?' inert':''}><h2 style="display:flex;align-items:center;gap:8px">${ic('cal',18)}الجدولة</h2><div class="row"><label class="f">يبدأ<span class="in"><input form="adForm" name="starts_at" type="datetime-local" value="${local(a.starts_at)}"></span></label><label class="f">ينتهي<span class="in"><input form="adForm" name="ends_at" type="datetime-local" value="${local(a.ends_at)}"></span></label></div><span class="sub">اتركه فارغاً ليبدأ فور النشر ويستمر حتى توقفه.</span></div>
@@ -336,6 +343,23 @@ async function saveBanner(status,btn){const val=k=>(document.querySelector(`[nam
   toast(data.status==='live'?'نُشر ✓':data.status==='pending'?'أُرسل للمدير للموافقة':'حُفظ ✓');file=null;await loadBanners();go('banners')}
  catch(e){if(uploaded)await sb.storage.from('ads').remove([uploaded]);err(e)}finally{btn.disabled=false}}
 
+// ---------- live now: everything currently shown in the app ----------
+function liveView(){const items=[...ads.filter(liveNow).map(a=>['ad',a]),...banners.filter(liveNow).map(b=>['banner',b])];
+ return `${backbar('نشطة الآن')}<span class="sub" style="padding:0 4px">ما يراه مستخدمو Keyvo الآن. اضغط أي عنصر لتفاصيله.</span>
+ ${items.length?items.map(([k,a])=>{const t=totals(1,a.id,k==='ad'?daily:bdaily);return `<div class="ad" data-item="${k}:${esc(a.id)}"><span class="thumb" style="${k==='banner'?'width:96px;height:50px;border-radius:10px;':''}background-image:url(&quot;${esc(imageUrl(a.image_path))}&quot;)"></span><span class="b"><span class="n"><b>${esc(a.title)}</b><span class="chip c-draft">${k==='ad'?'إعلان · الإعدادات':'بنر · الرئيسية'}</span></span><span class="sub">اليوم: <span class="num">${fmt(t.im)}</span> ظهور · <span class="num">${fmt(t.cl)}</span> ضغطة</span></span><span class="sub">‹</span></div>`}).join(''):'<div class="card muted center">لا يوجد شيء منشور الآن</div>'}`}
+// ---------- one item: its numbers over time ----------
+function itemView(){const [k,id]=String(param).split(':');const list=k==='ad'?ads:banners,src=k==='ad'?daily:bdaily;const a=list.find(x=>String(x.id)===id);if(!a)return '<div class="card muted">العنصر غير موجود</div>';
+ const[s,c]=statusOf(a);const t=totals(itemRange,a.id,src);const rows=series(itemRange,'impressions',src.filter(r=>String(r.ad_id)===id));const cl=series(itemRange,'clicks',src.filter(r=>String(r.ad_id)===id));
+ return `${backbar(esc(a.title),`<span class="chip ${c}">${s}</span>`)}
+ <div class="card" style="padding:10px"><span class="thumb" style="width:100%;height:auto;aspect-ratio:${k==='banner'?'1200/630':'3/1'};border-radius:14px;${k==='ad'?'background-size:contain;background-repeat:no-repeat;background-color:var(--card2);':''}background-image:url(&quot;${esc(imageUrl(a.image_path))}&quot;)"></span>
+ <span class="sub ellipsis" dir="ltr" style="text-align:right">${esc(k==='ad'?a.destination:a.link)}</span><span class="sub">${k==='ad'?'إعلان في صفحة الإعدادات':'بنر في الرئيسية'}${a.starts_at?' · يبدأ '+new Date(a.starts_at).toLocaleDateString('ar-SA-u-nu-latn'):''}${a.ends_at?' · ينتهي '+new Date(a.ends_at).toLocaleDateString('ar-SA-u-nu-latn'):''}</span></div>
+ <div class="seg" role="group">${[[1,'اليوم'],[7,'7 أيام'],[30,'30 يوم']].map(([d,l])=>`<button data-irange="${d}" aria-pressed="${itemRange===d}">${l}</button>`).join('')}</div>
+ <div class="kpis">${kpi('eye','الظهور',fmt(t.im))}${kpi('tap','الضغطات',fmt(t.cl))}</div>
+ <div class="kpis">${kpi('pct','نسبة الضغط',(t.im?t.cl/t.im*100:0).toFixed(1)+'%')}${kpi('cal','أُنشئ',a.created_at?new Date(a.created_at).toLocaleDateString('ar-SA-u-nu-latn',{day:'numeric',month:'short'}):'—')}</div>
+ <div class="card"><h2>الظهور يومياً</h2>${bars(itemRange===1?series(7,'impressions',src.filter(r=>String(r.ad_id)===id)):rows)}</div>
+ <div class="card"><h2>الضغطات يومياً</h2>${bars(itemRange===1?series(7,'clicks',src.filter(r=>String(r.ad_id)===id)):cl)}</div>
+ ${can('view')?`<button class="btn primary" data-${k==='ad'?'edit':'bedit'}="${esc(a.id)}">${ic('pen',18)}تعديل</button>`:''}`}
+
 // ---------- stats ----------
 function statsView(){const src=statKind==='ad'?daily:bdaily,items=statKind==='ad'?ads:banners;const t=totals(range,null,src),p={im:0,cl:0};const now=Date.now();const keys=new Set();for(let i=range;i<range*2;i++)keys.add(dayKey(new Date(now-i*864e5)));src.forEach(r=>{if(keys.has(r.day)){p.im+=+r.impressions;p.cl+=+r.clicks}});
  const rows=items.map(a=>({a,...totals(range,a.id,src)})).filter(x=>x.im||x.cl||x.a.status==='live').sort((x,y)=>y.im-x.im);
@@ -343,8 +367,8 @@ function statsView(){const src=statKind==='ad'?daily:bdaily,items=statKind==='ad
  <div class="seg" role="group" aria-label="النوع">${[['ad','الإعلانات'],['banner','البنرات']].map(([k,l])=>`<button data-stat="${k}" aria-pressed="${statKind===k}">${l}</button>`).join('')}</div>
  <div class="seg" role="group">${[[1,'اليوم'],[7,'7 أيام'],[30,'30 يوم']].map(([d,l])=>`<button data-range="${d}" aria-pressed="${range===d}">${l}</button>`).join('')}</div>
  <div class="kpis">${kpi('eye','الظهور',fmt(t.im),range<30?delta(t.im,p.im):'')}${kpi('tap','الضغطات',fmt(t.cl),range<30?delta(t.cl,p.cl):'')}</div>
- <div class="card"><h2>الضغطات يومياً</h2>${bars(series(range===1?7:range,'clicks',src))}</div>
- <div class="card" style="padding:14px"><table><thead><tr><th>${statKind==='ad'?'الإعلان':'البنر'}</th><th>ظهور</th><th>ضغط</th><th>النسبة</th></tr></thead><tbody>${rows.length?rows.map(x=>`<tr><td><b>${esc(x.a.title)}</b></td><td class="num">${fmt(x.im)}</td><td class="num">${fmt(x.cl)}</td><td class="num" style="font-weight:700;color:${x.im&&x.cl/x.im>.025?'var(--ok)':'var(--sub)'}">${x.im?(x.cl/x.im*100).toFixed(1):'0.0'}%</td></tr>`).join(''):'<tr><td colspan="4" class="muted">لا توجد بيانات لهذه الفترة</td></tr>'}</tbody></table></div>
+ <div class="card"><div class="top"><h2>${metric==='clicks'?'الضغطات':'الظهور'} يومياً</h2><div class="seg" style="padding:2px;width:150px">${[['impressions','الظهور'],['clicks','الضغطات']].map(([k,l])=>`<button data-metric="${k}" aria-pressed="${metric===k}">${l}</button>`).join('')}</div></div>${bars(series(range===1?7:range,metric,src))}</div>
+ <div class="card" style="padding:14px"><table><thead><tr><th>${statKind==='ad'?'الإعلان':'البنر'}</th><th>ظهور</th><th>ضغط</th><th>النسبة</th></tr></thead><tbody>${rows.length?rows.map(x=>`<tr class="tap" data-item="${statKind}:${esc(x.a.id)}"><td><b>${esc(x.a.title)}</b> <span class="sub">‹</span></td><td class="num">${fmt(x.im)}</td><td class="num">${fmt(x.cl)}</td><td class="num" style="font-weight:700;color:${x.im&&x.cl/x.im>.025?'var(--ok)':'var(--sub)'}">${x.im?(x.cl/x.im*100).toFixed(1):'0.0'}%</td></tr>`).join(''):'<tr><td colspan="4" class="muted">لا توجد بيانات لهذه الفترة</td></tr>'}</tbody></table></div>
  <div class="sub" style="display:flex;gap:10px;align-items:flex-start;padding:0 4px">${ic('shield',16)}<span>الظهور أو الضغط المكرر من نفس المصدر خلال دقيقة يُحسب مرة واحدة. لا معرّفات ولا مواقع. التنزيلات نفسها تتم في Google Play ولا تظهر هنا.</span></div>`}
 function exportCsv(){const lines=[['اليوم','النوع','الاسم','الظهور','الضغطات']];const name=(arr,id)=>(arr.find(a=>String(a.id)===String(id))||{}).title||id;
  daily.map(r=>({...r,t:'إعلان',n:name(ads,r.ad_id)})).concat(bdaily.map(r=>({...r,t:'بنر',n:name(banners,r.ad_id)}))).sort((a,b)=>a.day<b.day?-1:1).forEach(r=>lines.push([r.day,r.t,r.n,r.impressions,r.clicks]));
@@ -384,12 +408,13 @@ function memberMenu(email){const m=members.find(x=>x.email===email);if(!m)return
 
 // ---------- shell ----------
 function navView(){const items=[['home','الرئيسية','home',can('view')],['ads','الإعلانات','ads',can('view')],['banners','البنرات','img',can('view')],['stats','الإحصائيات','chart',can('stats')],['members','المشرفون','users',can('members')]].filter(x=>x[3]);
- return items.length>1?items.map(([r,l,i])=>`<button data-go="${r}" ${route===r||(route==='edit'&&r==='ads')||(route==='bedit'&&r==='banners')||(route==='invite'&&r==='members')?'aria-current="page"':''}><span>${ic(i)}</span>${l}</button>`).join(''):''}
-function show(r,p){route=r;param=p;render();scrollTo(0,0)}
+ return items.length>1?items.map(([r,l,i])=>`<button data-go="${r}" ${route===r||(route==='edit'&&r==='ads')||(route==='bedit'&&r==='banners')||((route==='live')&&r==='home')||(route==='item'&&r==='stats')||(route==='invite'&&r==='members')?'aria-current="page"':''}><span>${ic(i)}</span>${l}</button>`).join(''):''}
+let prevRoute='';
+function show(r,p){if(r==='item'&&route!=='item')prevRoute=route==='live'?'live':route==='home'?'home':'stats';route=r;param=p;render();scrollTo(0,0)}
 function go(r,p){if(r==='bedit'){file=null;draft=p==='new'?{status:'draft',interval_seconds:5}:{...banners.find(a=>String(a.id)===String(p))};if(!draft)return}
  if(r==='edit'){file=null;draft=p==='new'?{status:'draft',cta:'تحميل',interval_seconds:6}:{...ads.find(a=>String(a.id)===String(p))};if(!draft)return}
  if(r==='invite'&&route!=='invite')inv={role:'editor',perms:['view','edit','stats'],code:null,email:'',name:''};show(r,p)}
-function render(){const views={login:loginView,activate:activateView,join:joinView,home:homeView,ads:adsView,edit:editorView,banners:bannersView,bedit:bannerEditorView,stats:statsView,members:membersView,invite:inviteView};
+function render(){const views={login:loginView,activate:activateView,join:joinView,home:homeView,ads:adsView,edit:editorView,banners:bannersView,bedit:bannerEditorView,live:liveView,item:itemView,stats:statsView,members:membersView,invite:inviteView};
  app.innerHTML=(views[route]||homeView)();const nav=$('#nav');const n=me&&!['login','activate','join'].includes(route)?navView():'';nav.innerHTML=n;nav.classList.toggle('hidden',!n);
  if(route==='ads')wireDrag();if(route==='banners')wireDrag('banners');if(route==='edit')wireEditor();if(route==='bedit')wireBannerEditor();wireForms()}
 function wireForms(){
@@ -414,11 +439,14 @@ function wireForms(){
   sc.onclick=async()=>{if(navigator.share)try{await navigator.share({text:msg})}catch(_){}else{await navigator.clipboard.writeText(msg);toast('نُسخت الرسالة')}};
   $('#copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(inv.code);toast('نُسخ الرمز')}catch(_){toast(inv.code)}}}
 }
-document.addEventListener('click',async e=>{const t=e.target.closest('[data-go],[data-edit],[data-bedit],[data-btoggle],[data-stat],[data-filter],[data-toggle],[data-range],[data-role],[data-perm],[data-member]');if(!t)return;
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-item],[data-stats],[data-metric],[data-irange],[data-go],[data-edit],[data-bedit],[data-btoggle],[data-stat],[data-filter],[data-toggle],[data-range],[data-role],[data-perm],[data-member]');if(!t)return;
  if(t.dataset.toggle){e.stopPropagation();const a=ads.find(x=>String(x.id)===t.dataset.toggle);const next=a.status==='live'?'paused':'live';t.disabled=true;
   const{error}=await sb.from('ads').update({status:next}).eq('id',a.id);if(error){err(error);t.disabled=false;return}toast(next==='live'?'شُغّل':'أوقف');await loadAds();return render()}
  if(t.dataset.btoggle){e.stopPropagation();const a=banners.find(x=>String(x.id)===t.dataset.btoggle);const next=a.status==='live'?'paused':'live';t.disabled=true;
   const{error}=await sb.from('banners').update({status:next}).eq('id',a.id);if(error){err(error);t.disabled=false;return}toast(next==='live'?'شُغّل':'أوقف');await loadBanners();return render()}
+ if(t.dataset.item)return show('item',t.dataset.item);
+ if(t.dataset.stats){const[r,m]=t.dataset.stats.split(':');range=+r;metric=m;return show('stats')}
+ if(t.dataset.metric){metric=t.dataset.metric;return render()}if(t.dataset.irange){itemRange=+t.dataset.irange;return render()}
  if(t.dataset.go)return go(t.dataset.go,t.dataset.p);if(t.dataset.edit)return go('edit',t.dataset.edit);if(t.dataset.bedit)return go('bedit',t.dataset.bedit);
  if(t.dataset.stat){statKind=t.dataset.stat;return render()}
  if(t.dataset.filter){filter=t.dataset.filter;return render()}if(t.dataset.range){range=+t.dataset.range;return render()}
