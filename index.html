@@ -134,7 +134,7 @@ const STATUS={live:['نشط','c-live'],pending:['بانتظار الموافقة
 const DAYS=['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
 const ri=(r,s=44)=>{const R=ROLES[r]||ROLES.custom;return `<span class="ri" style="width:${s}px;height:${s}px;background:${R.c}22;color:${R.c};border:1px solid ${R.c}55">${ic(R.i,s*.45)}</span>`};
 
-let me=null,ads=[],daily=[],route='home',param=null,filter='all',range=7,members=[],audit=[];
+let me=null,ads=[],daily=[],banners=[],bdaily=[],statKind='ad',route='home',param=null,filter='all',range=7,members=[],audit=[];
 const can=p=>!!me&&me.perms.includes(p);
 function toast(t){const m=$('#toast');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3200)}
 function err(e){const m=String(e&&e.message||e);toast(({'invalid invitation':'الرمز غير صحيح أو انتهت صلاحيته','not allowed':'ليست لديك صلاحية لهذا','Invalid login credentials':'البريد أو كلمة المرور غير صحيحة','already a member':'هذا البريد مشرف بالفعل','live or paused ads need a manager':'الإعلان المنشور يعدّله المدير فقط'})[m]||('تعذّر: '+m))}
@@ -145,19 +145,20 @@ theme();
 function liveNow(a){const n=Date.now();return a.status==='live'&&(!a.starts_at||Date.parse(a.starts_at)<=n)&&(!a.ends_at||Date.parse(a.ends_at)>n)}
 function statusOf(a){if(a.status==='live'&&a.starts_at&&Date.parse(a.starts_at)>Date.now())return['مجدول','c-sched'];if(a.status==='live'&&a.ends_at&&Date.parse(a.ends_at)<=Date.now())return['منتهي','c-off'];return STATUS[a.status]||STATUS.draft}
 function dayKey(d){return d.toLocaleDateString('en-CA',{timeZone:'Asia/Riyadh'})}
-function totals(days,adId){const keys=new Set();const now=new Date();for(let i=0;i<days;i++)keys.add(dayKey(new Date(now-i*864e5)));
- let im=0,cl=0;daily.forEach(r=>{if(keys.has(r.day)&&(!adId||String(r.ad_id)===String(adId))){im+=+r.impressions;cl+=+r.clicks}});return{im,cl}}
-function series(days,kind){const out=[];const now=new Date();for(let i=days-1;i>=0;i--){const d=new Date(now-i*864e5);const k=dayKey(d);
- out.push({label:days<=7?DAYS[new Date(k+'T12:00:00').getDay()]:k.slice(8),v:daily.filter(r=>r.day===k).reduce((s,r)=>s+(+r[kind]),0)})}return out}
+function totals(days,adId,src=daily){const keys=new Set();const now=new Date();for(let i=0;i<days;i++)keys.add(dayKey(new Date(now-i*864e5)));
+ let im=0,cl=0;src.forEach(r=>{if(keys.has(r.day)&&(!adId||String(r.ad_id)===String(adId))){im+=+r.impressions;cl+=+r.clicks}});return{im,cl}}
+function series(days,kind,src=daily){const out=[];const now=new Date();for(let i=days-1;i>=0;i--){const d=new Date(now-i*864e5);const k=dayKey(d);
+ out.push({label:days<=7?DAYS[new Date(k+'T12:00:00').getDay()]:k.slice(8),v:src.filter(r=>r.day===k).reduce((s,r)=>s+(+r[kind]),0)})}return out}
 function bars(s){const m=Math.max(1,...s.map(x=>x.v));return `<div class="bars" role="img" aria-label="${esc(s.map(x=>x.label+' '+x.v).join('، '))}">${s.map(x=>`<span><i style="height:${Math.max(4,x.v/m*88)}px"></i>${esc(x.label)}</span>`).join('')}</div>`}
 function delta(a,b){if(!b)return a?'<span class="d up num" dir="ltr">جديد</span>':'<span class="d num"> </span>';const p=(a-b)/b*100;return `<span class="d ${p>=0?'up':'down'} num" dir="ltr">${p>=0?'+':''}${p.toFixed(0)}%</span>`}
 function kpi(icon,label,value,d=''){return `<div class="kpi"><span class="l"><i>${ic(icon)}</i>${label}</span><span class="v num">${value}</span>${d}</div>`}
 function topBar(title,sub,action=''){return `<div class="top"><span class="t"><h1>${title}</h1>${sub?`<span class="sub">${sub}</span>`:''}</span>${action}</div>`}
-function backbar(title,extra=''){return `<div class="top" style="justify-content:flex-start"><button class="icon" data-go="${route==='invite'?'members':'ads'}" aria-label="رجوع">${ic('back',18)}</button><h1 style="flex:1;font-size:22px">${title}</h1>${extra}</div>`}
+function backbar(title,extra=''){return `<div class="top" style="justify-content:flex-start"><button class="icon" data-go="${route==='invite'?'members':route==='bedit'?'banners':'ads'}" aria-label="رجوع">${ic('back',18)}</button><h1 style="flex:1;font-size:22px">${title}</h1>${extra}</div>`}
 
 // ---------- data ----------
 async function loadAds(){if(!(can('view')||can('stats')))return ads=[];const{data,error}=await sb.from('ads').select('*').order('sort_order').order('created_at');if(error)throw error;ads=data||[]}
-async function loadStats(days=30){if(!can('stats'))return daily=[];const{data,error}=await sb.rpc('panel_daily',{p_days:days});if(error)throw error;daily=(data||[]).map(r=>({...r,day:String(r.day)}))}
+async function loadStats(days=30){if(!can('stats'))return daily=bdaily=[];const[a,b]=await Promise.all([sb.rpc('panel_daily',{p_days:days}),sb.rpc('panel_banner_daily',{p_days:days})]);if(a.error)throw a.error;if(b.error)throw b.error;daily=(a.data||[]).map(r=>({...r,day:String(r.day)}));bdaily=(b.data||[]).map(r=>({...r,day:String(r.day)}))}
+async function loadBanners(){if(!(can('view')||can('stats')))return banners=[];const{data,error}=await sb.from('banners').select('*').order('sort_order').order('created_at');if(error)throw error;banners=data||[]}
 async function loadMembers(){if(!can('members'))return;const[m,a]=await Promise.all([sb.from('panel_members').select('email,name,role,perms,is_owner,active,user_id,last_seen,invite_expires').order('created_at'),sb.from('panel_audit').select('*').order('at',{ascending:false}).limit(20)]);if(m.error)throw m.error;members=m.data||[];audit=a.data||[]}
 
 // ---------- auth ----------
@@ -169,7 +170,7 @@ async function boot(){
  if(!data){me=null;return show('join')}
  me=data;await refresh();show(can('view')||can('stats')?(can('view')?'home':'stats'):'members')
 }
-async function refresh(){try{await Promise.all([loadAds(),loadStats(30),loadMembers()])}catch(e){err(e)}}
+async function refresh(){try{await Promise.all([loadAds(),loadBanners(),loadStats(30),loadMembers()])}catch(e){err(e)}}
 
 function loginView(){return `<div style="height:40px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:12px"><span class="logo" aria-hidden="true">K</span><h1>لوحة إدارة Keyvo</h1><span class="muted center">إدارة العروض داخل التطبيق ومتابعة أدائها</span></div>
 <form class="card" id="loginForm" style="padding:18px;gap:14px">
@@ -190,16 +191,17 @@ function joinView(){return `<div style="height:40px"></div>${topBar('حسابك 
 
 // ---------- home ----------
 function homeView(){
- const live=ads.filter(liveNow).length,pending=ads.filter(a=>a.status==='pending');
- const t=totals(1),y={im:0,cl:0};const yk=dayKey(new Date(Date.now()-864e5));daily.forEach(r=>{if(r.day===yk){y.im+=+r.impressions;y.cl+=+r.clicks}});
+ const all=daily.concat(bdaily);
+ const live=ads.filter(liveNow).length+banners.filter(liveNow).length,pending=[...ads.filter(a=>a.status==='pending').map(a=>({...a,k:'edit'})),...banners.filter(a=>a.status==='pending').map(a=>({...a,k:'bedit'}))];
+ const t=totals(1,null,all),y={im:0,cl:0};const yk=dayKey(new Date(Date.now()-864e5));all.forEach(r=>{if(r.day===yk){y.im+=+r.impressions;y.cl+=+r.clicks}});
  const ctr=t.im?t.cl/t.im*100:0,yctr=y.im?y.cl/y.im*100:0;
- const best=ads.map(a=>({a,...totals(7,a.id)})).filter(x=>x.im).sort((p,q)=>q.cl/q.im-p.cl/p.im).slice(0,3);
+ const best=[...ads.map(a=>({a,...totals(7,a.id)})),...banners.map(a=>({a,...totals(7,a.id,bdaily)}))].filter(x=>x.im).sort((p,q)=>q.cl/q.im-p.cl/p.im).slice(0,3);
  const hour=+new Date().toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'Asia/Riyadh'});
  return `${topBar(hour<12?'صباح الخير':'مساء الخير',me.name?esc(me.name)+' · '+ROLES[me.role]?.n:ROLES[me.role]?.n,`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`)}
- ${can('publish')&&pending.length?`<div class="notice"><span style="color:var(--warn)">${ic('bell')}</span><span style="flex:1;display:flex;flex-direction:column"><b>${pending.length===1?'إعلان بانتظار موافقتك':pending.length+' إعلانات بانتظار موافقتك'}</b><span class="muted ellipsis">«${esc(pending[0].title)}»</span></span><button class="btn warn" data-edit="${esc(pending[0].id)}">مراجعة</button></div>`:''}
- ${can('stats')?`<div class="kpis">${kpi('live','إعلانات نشطة',live)}${kpi('eye','ظهور اليوم',fmt(t.im),delta(t.im,y.im))}${kpi('tap','ضغطات اليوم',fmt(t.cl),delta(t.cl,y.cl))}${kpi('pct','نسبة الضغط',ctr.toFixed(1)+'%',delta(ctr,yctr))}</div>
- <div class="card"><div class="top"><h2>الظهور — آخر 7 أيام</h2><span class="sub">كل الإعلانات</span></div>${bars(series(7,'impressions'))}</div>
- <div class="card"><h2>الأفضل أداءً</h2>${best.length?best.map(x=>`<div style="display:flex;align-items:center;gap:12px"><span class="thumb" style="width:44px;height:44px;border-radius:12px;background-image:url(&quot;${esc(imageUrl(x.a.image_path))}&quot;)"></span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><b class="ellipsis">${esc(x.a.title)}</b><span class="sub num">${fmt(x.im)} ظهور · ${fmt(x.cl)} ضغطة</span></span><b class="num" style="color:var(--ok)">${(x.cl/x.im*100).toFixed(1)}%</b></div>`).join(''):'<span class="muted">لا توجد بيانات بعد. تظهر هنا بعد أول ظهور للإعلانات في التطبيق.</span>'}</div>`
+ ${can('publish')&&pending.length?`<div class="notice"><span style="color:var(--warn)">${ic('bell')}</span><span style="flex:1;display:flex;flex-direction:column"><b>${pending.length===1?'بانتظار موافقتك':pending.length+' بانتظار موافقتك'}</b><span class="muted ellipsis">${pending[0].k==='bedit'?'بنر':'إعلان'} «${esc(pending[0].title)}»</span></span><button class="btn warn" data-go="${pending[0].k}" data-p="${esc(pending[0].id)}">مراجعة</button></div>`:''}
+ ${can('stats')?`<div class="kpis">${kpi('live','نشطة الآن',live)}${kpi('eye','ظهور اليوم',fmt(t.im),delta(t.im,y.im))}${kpi('tap','ضغطات اليوم',fmt(t.cl),delta(t.cl,y.cl))}${kpi('pct','نسبة الضغط',ctr.toFixed(1)+'%',delta(ctr,yctr))}</div>
+ <div class="card"><div class="top"><h2>الظهور — آخر 7 أيام</h2><span class="sub">الإعلانات والبنرات</span></div>${bars(series(7,'impressions',all))}</div>
+ <div class="card"><h2>الأفضل أداءً</h2>${best.length?best.map(x=>`<div style="display:flex;align-items:center;gap:12px"><span class="thumb" style="width:${x.a.link?64:44}px;height:44px;border-radius:12px;background-image:url(&quot;${esc(imageUrl(x.a.image_path))}&quot;)"></span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><b class="ellipsis">${esc(x.a.title)}</b><span class="sub num">${fmt(x.im)} ظهور · ${fmt(x.cl)} ضغطة</span></span><b class="num" style="color:var(--ok)">${(x.cl/x.im*100).toFixed(1)}%</b></div>`).join(''):'<span class="muted">لا توجد بيانات بعد. تظهر هنا بعد أول ظهور للإعلانات في التطبيق.</span>'}</div>`
  :`<div class="kpis">${kpi('live','إعلانات نشطة',live)}${kpi('bell','بانتظار الموافقة',pending.length)}</div>`}`}
 
 // ---------- ads ----------
@@ -218,17 +220,17 @@ function adCard(a,reorder){const[s,c]=statusOf(a);const t=totals(30,a.id);const 
  <span class="b"><span class="n"><b>${esc(a.title)}</b><span class="chip ${c}">${s}</span></span><span class="muted ellipsis">${esc(a.description)}</span><span class="sub">${sched||(can('stats')?`<span class="num">${fmt(t.im)}</span> ظهور · <span class="num">${fmt(t.cl)}</span> ضغطة`:'')}</span></span>
  ${can('publish')&&(a.status==='live'||a.status==='paused')?`<button class="tg" role="switch" aria-checked="${on}" aria-label="${on?'إيقاف':'تشغيل'} «${esc(a.title)}»" data-toggle="${esc(a.id)}"></button>`:''}</div>`}
 
-function wireDrag(){const list=$('#list');if(!list)return;let drag=null,moved=false;
+function wireDrag(table='ads'){const list=$('#list');if(!list)return;const arr=()=>table==='ads'?ads:banners;const reload=()=>table==='ads'?loadAds():loadBanners();let drag=null,moved=false;
  list.querySelectorAll('[data-grip]').forEach(g=>{g.addEventListener('click',e=>e.stopPropagation());g.addEventListener('pointerdown',e=>{e.preventDefault();drag=g.closest('.ad');drag.classList.add('drag');g.setPointerCapture(e.pointerId);moved=false});
  g.addEventListener('pointermove',e=>{if(!drag)return;const over=[...list.children].find(el=>{const r=el.getBoundingClientRect();return el!==drag&&e.clientY>r.top&&e.clientY<r.bottom});
   if(over){const r=over.getBoundingClientRect();list.insertBefore(drag,e.clientY<r.top+r.height/2?over:over.nextSibling);moved=true}});
  const end=async()=>{if(!drag)return;drag.classList.remove('drag');drag=null;if(!moved)return;const ids=[...list.children].map(el=>el.dataset.id);
-  const changes=ids.map((id,i)=>({id,i})).filter(({id,i})=>{const a=ads.find(x=>String(x.id)===id);return a&&a.sort_order!==i});
-  try{for(const c of changes){const{error}=await sb.from('ads').update({sort_order:c.i}).eq('id',c.id);if(error)throw error}toast('تم حفظ الترتيب');await loadAds()}catch(e){err(e);await loadAds();render()}};
+  const changes=ids.map((id,i)=>({id,i})).filter(({id,i})=>{const a=arr().find(x=>String(x.id)===id);return a&&a.sort_order!==i});
+  try{for(const c of changes){const{error}=await sb.from(table).update({sort_order:c.i}).eq('id',c.id);if(error)throw error}toast('تم حفظ الترتيب');await reload()}catch(e){err(e);await reload();render()}};
  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end)});
  // Keyboard: arrows move the focused item.
  list.querySelectorAll('[data-grip]').forEach(g=>g.addEventListener('keydown',async e=>{if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;e.preventDefault();const el=g.closest('.ad');const sib=e.key==='ArrowUp'?el.previousElementSibling:el.nextElementSibling;if(!sib)return;
-  list.insertBefore(el,e.key==='ArrowUp'?sib:sib.nextSibling);g.focus();const ids=[...list.children].map(x=>x.dataset.id);for(const[i,id]of ids.entries()){const a=ads.find(x=>String(x.id)===id);if(a&&a.sort_order!==i){const{error}=await sb.from('ads').update({sort_order:i}).eq('id',id);if(error)return err(error)}}await loadAds()}))}
+  list.insertBefore(el,e.key==='ArrowUp'?sib:sib.nextSibling);g.focus();const ids=[...list.children].map(x=>x.dataset.id);for(const[i,id]of ids.entries()){const a=arr().find(x=>String(x.id)===id);if(a&&a.sort_order!==i){const{error}=await sb.from(table).update({sort_order:i}).eq('id',id);if(error)return err(error)}}await reload()}))}
 
 // ---------- editor ----------
 let draft=null,file=null,previewLight=false;
@@ -281,24 +283,78 @@ async function saveAd(status,btn){const f=$('#adForm');const val=k=>(f.elements[
   toast(data.status==='live'?'نُشر ✓':data.status==='pending'?'أُرسل للمدير للموافقة':'حُفظ ✓');file=null;await loadAds();go('ads')}
  catch(e){if(uploaded)await sb.storage.from('ads').remove([uploaded]);err(e)}finally{btn.disabled=false}}
 
+// ---------- banners (full designed images at the top of the Keyvo home) ----------
+function bannersView(){const reorder=can('publish')&&banners.length>1;
+ return `${topBar('البنرات','صور كاملة أعلى الرئيسية في تطبيق Keyvo'+(reorder?' · الترتيب = ترتيب الظهور':''),can('edit')?`<button class="fab" data-bedit="new" aria-label="بنر جديد">${ic('plus',24)}</button>`:'')}
+ <div id="list" style="display:flex;flex-direction:column;gap:14px">${banners.length?banners.map(b=>bannerCard(b,reorder)).join(''):`<div class="card muted center">لا توجد بنرات بعد${can('edit')?`<button class="btn primary" data-bedit="new">${ic('plus',18)}أضف أول بنر</button>`:''}</div>`}</div>
+ ${reorder?`<span class="sub center">اسحب ⋮⋮ لتغيير الترتيب</span>`:''}`}
+function bannerCard(b,reorder){const[s,c]=statusOf(b);const t=totals(30,b.id,bdaily);const on=b.status==='live';
+ return `<div class="ad" data-id="${esc(b.id)}" data-bedit="${esc(b.id)}" style="flex-direction:column;align-items:stretch;padding:10px;gap:10px">
+ <span class="thumb" style="width:100%;height:auto;aspect-ratio:1200/630;border-radius:14px;background-image:url(&quot;${esc(imageUrl(b.image_path))}&quot;)"></span>
+ <span style="display:flex;align-items:center;gap:10px">${reorder?`<button class="grip" aria-label="اسحب لترتيب «${esc(b.title)}»" data-grip>${ic('grip',18)}</button>`:''}
+ <span class="b" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span class="n" style="display:flex;align-items:center;gap:8px"><b class="ellipsis">${esc(b.title)}</b><span class="chip ${c}">${s}</span></span>
+ <span class="sub ellipsis" dir="ltr" style="text-align:right">${esc(b.link)}</span>${can('stats')?`<span class="sub"><span class="num">${fmt(t.im)}</span> ظهور · <span class="num">${fmt(t.cl)}</span> ضغطة · آخر 30 يوماً</span>`:''}</span>
+ ${can('publish')&&(b.status==='live'||b.status==='paused')?`<button class="tg" role="switch" aria-checked="${on}" aria-label="${on?'إيقاف':'تشغيل'} «${esc(b.title)}»" data-btoggle="${esc(b.id)}"></button>`:''}</span></div>`}
+function bannerEditorView(){const b=draft;const isNew=!b.id;const publisher=can('publish');const locked=!publisher&&!['draft','pending'].includes(b.status);
+ const [s,c]=isNew?['جديد','c-draft']:statusOf(b);const img=file?URL.createObjectURL(file):imageUrl(b.image_path);const v=(k,d='')=>esc(b[k]??d);
+ const local=x=>{if(!x)return'';const d=new Date(x);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`};
+ return `${backbar(isNew?'بنر جديد':'تعديل البنر',`<span class="chip ${c}">${s}</span>`)}
+ ${locked?`<div class="notice"><span style="color:var(--warn)">${ic('lock')}</span><span class="muted" style="flex:1">هذا البنر منشور. التعديل عليه للمدير فقط.</span></div>`:''}
+ <div class="preview"><div class="top"><span class="muted" style="font-weight:600">معاينة في رئيسية Keyvo</span><div class="seg" style="padding:2px;width:130px"><button type="button" data-pv="0" aria-pressed="${!previewLight}">داكن</button><button type="button" data-pv="1" aria-pressed="${previewLight}">فاتح</button></div></div>
+ <div class="phone ${previewLight?'light':''}" style="width:250px"><b style="font-size:15px;font-family:Inter,sans-serif" dir="ltr">Keyvo</b>
+ <div style="border-radius:14px;aspect-ratio:1200/630;background:${img?`url(&quot;${esc(img)}&quot;) center/cover`:'var(--card2)'};display:flex;align-items:center;justify-content:center;color:var(--mute)">${img?'':ic('img',28)}</div>
+ <span style="display:flex;justify-content:center;gap:4px"><span style="width:14px;height:4px;border-radius:2px;background:currentColor"></span><span style="width:4px;height:4px;border-radius:2px;background:currentColor;opacity:.4"></span><span style="width:4px;height:4px;border-radius:2px;background:currentColor;opacity:.4"></span></span>
+ <div class="ph"></div><div class="ph"></div></div></div>
+ <form id="bForm" class="card"${locked?' inert':''}>
+ <span style="font-size:13px;font-weight:600;color:var(--sub)">صورة البنر (PNG أو JPG أو WebP، حتى 2MB، الأفضل 1200×630)</span>
+ <label class="upload"><span class="thumb" style="width:76px;height:40px;border-radius:8px;${img?`background-image:url(&quot;${esc(img)}&quot;)`:''}">${img?'':ic('img')}</span><span style="flex:1;display:flex;flex-direction:column;font-size:13px;min-width:0"><b class="ellipsis" style="color:var(--ink)">${file?esc(file.name):b.image_path?'الصورة الحالية':'اختر صورة البنر'}</b><span class="num" dir="ltr">${file?(file.size/1024).toFixed(0)+' KB':''}</span></span><span class="link">${img?'تغيير':'اختيار'}</span><input type="file" id="imgIn" accept="image/png,image/jpeg,image/webp" class="hidden"></label>
+ <label class="f">اسم البنر (داخلي، ويُقرأ لمستخدمي قارئ الشاشة)<span class="in"><input name="title" maxlength="80" required value="${v('title')}"></span></label>
+ <label class="f">الرابط عند الضغط<span class="in"><input name="link" dir="ltr" required placeholder="https://play.google.com/store/apps/details?id=… أو https://…" value="${v('link')}"></span></label>
+ <label class="f">مدة الظهور قبل البنر التالي (ثوانٍ)<span class="in"><input name="interval_seconds" type="number" min="3" max="60" value="${v('interval_seconds',5)}" class="num"></span></label>
+ </form>
+ <div class="card"${locked?' inert':''}><h2 style="display:flex;align-items:center;gap:8px">${ic('cal',18)}الجدولة</h2><div class="row"><label class="f">يبدأ<span class="in"><input form="bForm" name="starts_at" type="datetime-local" value="${local(b.starts_at)}"></span></label><label class="f">ينتهي<span class="in"><input form="bForm" name="ends_at" type="datetime-local" value="${local(b.ends_at)}"></span></label></div><span class="sub">اتركه فارغاً ليبدأ فور النشر ويستمر حتى توقفه.</span></div>
+ ${locked?'':actions(b,publisher)}
+ ${!isNew&&can('delete')?`<button class="btn danger" id="delB">${ic('trash',18)}حذف البنر</button>`:''}`}
+function wireBannerEditor(){const f=$('#bForm');if(!f)return;
+ $('#imgIn').addEventListener('change',e=>{const x=e.target.files[0];if(!x)return;if(x.size>2*1024*1024)return toast('الصورة أكبر من 2 ميجابايت');if(!['image/png','image/jpeg','image/webp'].includes(x.type))return toast('نوع الصورة غير مدعوم');
+  ['title','link','interval_seconds','starts_at','ends_at'].forEach(k=>{const el=document.querySelector(`[name=${k}]`);if(el)draft[k]=el.type==='datetime-local'?(el.value?new Date(el.value).toISOString():null):el.value});file=x;render()});
+ document.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{previewLight=b.dataset.pv==='1';$('.phone').classList.toggle('light',previewLight);document.querySelectorAll('[data-pv]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+ document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveBanner(b.dataset.save,b));
+ const del=$('#delB');if(del)del.onclick=async()=>{if(!confirm(`حذف «${draft.title}» نهائياً؟`))return;const{error}=await sb.from('banners').delete().eq('id',draft.id);if(error)return err(error);if(draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);toast('حُذف');await loadBanners();go('banners')}}
+const LINK_RE=/^(https:\/\/play\.google\.com\/store\/apps\/details\?id=[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+|https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(\/[^\s<>"]*)?)$/;
+async function saveBanner(status,btn){const val=k=>(document.querySelector(`[name=${k}]`)?.value??'').trim();
+ const row={title:val('title'),link:val('link'),interval_seconds:Math.min(60,Math.max(3,parseInt(val('interval_seconds')||'5'))),
+  starts_at:val('starts_at')?new Date(val('starts_at')).toISOString():null,ends_at:val('ends_at')?new Date(val('ends_at')).toISOString():null,status};
+ if(!row.title)return toast('اكتب اسم البنر');if(!LINK_RE.test(row.link)||row.link.length>500)return toast('الرابط يجب أن يبدأ بـ https:// (رابط Google Play أو موقع)');
+ if(row.starts_at&&row.ends_at&&row.ends_at<=row.starts_at)return toast('تاريخ الانتهاء قبل البداية');if(!draft.id&&!file)return toast('اختر صورة البنر');
+ btn.disabled=true;let uploaded=null;
+ try{if(file){const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[file.type];uploaded=`banners/${crypto.randomUUID()}.${ext}`;
+   const{error}=await sb.storage.from('ads').upload(uploaded,file,{contentType:file.type,cacheControl:'3600'});if(error)throw error;row.image_path=uploaded}
+  if(!draft.id)row.sort_order=banners.length?Math.max(...banners.map(a=>a.sort_order||0))+1:0;
+  const{data,error}=draft.id?await sb.from('banners').update(row).eq('id',draft.id).select().single():await sb.from('banners').insert(row).select().single();
+  if(error)throw error;if(uploaded&&draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);
+  toast(data.status==='live'?'نُشر ✓':data.status==='pending'?'أُرسل للمدير للموافقة':'حُفظ ✓');file=null;await loadBanners();go('banners')}
+ catch(e){if(uploaded)await sb.storage.from('ads').remove([uploaded]);err(e)}finally{btn.disabled=false}}
+
 // ---------- stats ----------
-function statsView(){const t=totals(range),p={im:0,cl:0};const now=Date.now();const keys=new Set();for(let i=range;i<range*2;i++)keys.add(dayKey(new Date(now-i*864e5)));daily.forEach(r=>{if(keys.has(r.day)){p.im+=+r.impressions;p.cl+=+r.clicks}});
- const rows=ads.map(a=>({a,...totals(range,a.id)})).filter(x=>x.im||x.cl||x.a.status==='live').sort((x,y)=>y.im-x.im);
+function statsView(){const src=statKind==='ad'?daily:bdaily,items=statKind==='ad'?ads:banners;const t=totals(range,null,src),p={im:0,cl:0};const now=Date.now();const keys=new Set();for(let i=range;i<range*2;i++)keys.add(dayKey(new Date(now-i*864e5)));src.forEach(r=>{if(keys.has(r.day)){p.im+=+r.impressions;p.cl+=+r.clicks}});
+ const rows=items.map(a=>({a,...totals(range,a.id,src)})).filter(x=>x.im||x.cl||x.a.status==='live').sort((x,y)=>y.im-x.im);
  return `${topBar('الإحصائيات','أرقام تقريبية لقياس التفاعل',`<span style="display:flex;gap:8px"><button class="icon" id="csv" aria-label="تصدير CSV">${ic('down',18)}</button>${can('view')?'':`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`}</span>`)}
+ <div class="seg" role="group" aria-label="النوع">${[['ad','الإعلانات'],['banner','البنرات']].map(([k,l])=>`<button data-stat="${k}" aria-pressed="${statKind===k}">${l}</button>`).join('')}</div>
  <div class="seg" role="group">${[[1,'اليوم'],[7,'7 أيام'],[30,'30 يوم']].map(([d,l])=>`<button data-range="${d}" aria-pressed="${range===d}">${l}</button>`).join('')}</div>
  <div class="kpis">${kpi('eye','الظهور',fmt(t.im),range<30?delta(t.im,p.im):'')}${kpi('tap','الضغطات',fmt(t.cl),range<30?delta(t.cl,p.cl):'')}</div>
- <div class="card"><h2>الضغطات يومياً</h2>${bars(series(range===1?7:range,'clicks'))}</div>
- <div class="card" style="padding:14px"><table><thead><tr><th>الإعلان</th><th>ظهور</th><th>ضغط</th><th>النسبة</th></tr></thead><tbody>${rows.length?rows.map(x=>`<tr><td><b>${esc(x.a.title)}</b></td><td class="num">${fmt(x.im)}</td><td class="num">${fmt(x.cl)}</td><td class="num" style="font-weight:700;color:${x.im&&x.cl/x.im>.025?'var(--ok)':'var(--sub)'}">${x.im?(x.cl/x.im*100).toFixed(1):'0.0'}%</td></tr>`).join(''):'<tr><td colspan="4" class="muted">لا توجد بيانات لهذه الفترة</td></tr>'}</tbody></table></div>
+ <div class="card"><h2>الضغطات يومياً</h2>${bars(series(range===1?7:range,'clicks',src))}</div>
+ <div class="card" style="padding:14px"><table><thead><tr><th>${statKind==='ad'?'الإعلان':'البنر'}</th><th>ظهور</th><th>ضغط</th><th>النسبة</th></tr></thead><tbody>${rows.length?rows.map(x=>`<tr><td><b>${esc(x.a.title)}</b></td><td class="num">${fmt(x.im)}</td><td class="num">${fmt(x.cl)}</td><td class="num" style="font-weight:700;color:${x.im&&x.cl/x.im>.025?'var(--ok)':'var(--sub)'}">${x.im?(x.cl/x.im*100).toFixed(1):'0.0'}%</td></tr>`).join(''):'<tr><td colspan="4" class="muted">لا توجد بيانات لهذه الفترة</td></tr>'}</tbody></table></div>
  <div class="sub" style="display:flex;gap:10px;align-items:flex-start;padding:0 4px">${ic('shield',16)}<span>الظهور أو الضغط المكرر من نفس المصدر خلال دقيقة يُحسب مرة واحدة. لا معرّفات ولا مواقع. التنزيلات نفسها تتم في Google Play ولا تظهر هنا.</span></div>`}
-function exportCsv(){const lines=[['اليوم','الإعلان','الظهور','الضغطات']];const name=id=>(ads.find(a=>String(a.id)===String(id))||{}).title||id;
- daily.slice().sort((a,b)=>a.day<b.day?-1:1).forEach(r=>lines.push([r.day,name(r.ad_id),r.impressions,r.clicks]));
+function exportCsv(){const lines=[['اليوم','النوع','الاسم','الظهور','الضغطات']];const name=(arr,id)=>(arr.find(a=>String(a.id)===String(id))||{}).title||id;
+ daily.map(r=>({...r,t:'إعلان',n:name(ads,r.ad_id)})).concat(bdaily.map(r=>({...r,t:'بنر',n:name(banners,r.ad_id)}))).sort((a,b)=>a.day<b.day?-1:1).forEach(r=>lines.push([r.day,r.t,r.n,r.impressions,r.clicks]));
  const csv='﻿'+lines.map(l=>l.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`keyvo-stats-${dayKey(new Date())}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 
 // ---------- members ----------
 function ago(t){if(!t)return'لم يدخل بعد';const m=(Date.now()-Date.parse(t))/6e4;return m<5?'متصل الآن':m<60?`قبل ${Math.round(m)} دقيقة`:m<1440?`قبل ${Math.round(m/60)} ساعة`:`قبل ${Math.round(m/1440)} يوم`}
 const ACT={'member.invited':['دعا','var(--acc)'],'member.joined':['فعّل حسابه','var(--ok)'],'member.suspended':['أوقف','var(--off)'],'member.activated':['أعاد تفعيل','var(--ok)'],'member.changed':['غيّر دور','var(--acc)'],'member.removed':['حذف','var(--bad)'],'member.reinvited':['أعاد دعوة','var(--acc)'],
- 'ad.live':['نشر','var(--ok)'],'ad.pending':['أرسل للموافقة','var(--warn)'],'ad.draft':['حفظ مسودة','var(--accInk)'],'ad.paused':['أوقف','var(--off)'],'ad.edited':['عدّل','var(--acc)'],'ad.deleted':['حذف','var(--bad)']};
+ 'ad.live':['نشر','var(--ok)'],'ad.pending':['أرسل للموافقة','var(--warn)'],'ad.draft':['حفظ مسودة','var(--accInk)'],'ad.paused':['أوقف','var(--off)'],'ad.edited':['عدّل','var(--acc)'],'ad.deleted':['حذف','var(--bad)'],'banner.live':['نشر البنر','var(--ok)'],'banner.pending':['أرسل البنر للموافقة','var(--warn)'],'banner.draft':['حفظ مسودة البنر','var(--accInk)'],'banner.paused':['أوقف البنر','var(--off)'],'banner.edited':['عدّل البنر','var(--acc)'],'banner.deleted':['حذف البنر','var(--bad)']};
 function membersView(){const count=r=>members.filter(m=>m.role===r).length;
  return `${topBar('المشرفون','الأدوار تحدد ما يراه كل مشرف',`<span style="display:flex;gap:8px"><button class="pill" data-go="invite">${ic('plus',18)}إضافة مشرف</button>${can('view')||can('stats')?'':`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`}</span>`)}
  <div class="roles">${['manager','editor','analyst'].map(r=>`<div>${ri(r,36)}<span>${ROLES[r].n}</span><b class="num">${count(r)}</b></div>`).join('')}</div>
@@ -327,14 +383,15 @@ function memberMenu(email){const m=members.find(x=>x.email===email);if(!m)return
    await loadMembers();render()}catch(x){err(x)}}}
 
 // ---------- shell ----------
-function navView(){const items=[['home','الرئيسية','home',can('view')],['ads','الإعلانات','ads',can('view')],['stats','الإحصائيات','chart',can('stats')],['members','المشرفون','users',can('members')]].filter(x=>x[3]);
- return items.length>1?items.map(([r,l,i])=>`<button data-go="${r}" ${route===r||(route==='edit'&&r==='ads')||(route==='invite'&&r==='members')?'aria-current="page"':''}><span>${ic(i)}</span>${l}</button>`).join(''):''}
+function navView(){const items=[['home','الرئيسية','home',can('view')],['ads','الإعلانات','ads',can('view')],['banners','البنرات','img',can('view')],['stats','الإحصائيات','chart',can('stats')],['members','المشرفون','users',can('members')]].filter(x=>x[3]);
+ return items.length>1?items.map(([r,l,i])=>`<button data-go="${r}" ${route===r||(route==='edit'&&r==='ads')||(route==='bedit'&&r==='banners')||(route==='invite'&&r==='members')?'aria-current="page"':''}><span>${ic(i)}</span>${l}</button>`).join(''):''}
 function show(r,p){route=r;param=p;render();scrollTo(0,0)}
-function go(r,p){if(r==='edit'){file=null;draft=p==='new'?{status:'draft',cta:'تحميل',interval_seconds:6}:{...ads.find(a=>String(a.id)===String(p))};if(!draft)return}
+function go(r,p){if(r==='bedit'){file=null;draft=p==='new'?{status:'draft',interval_seconds:5}:{...banners.find(a=>String(a.id)===String(p))};if(!draft)return}
+ if(r==='edit'){file=null;draft=p==='new'?{status:'draft',cta:'تحميل',interval_seconds:6}:{...ads.find(a=>String(a.id)===String(p))};if(!draft)return}
  if(r==='invite'&&route!=='invite')inv={role:'editor',perms:['view','edit','stats'],code:null,email:'',name:''};show(r,p)}
-function render(){const views={login:loginView,activate:activateView,join:joinView,home:homeView,ads:adsView,edit:editorView,stats:statsView,members:membersView,invite:inviteView};
+function render(){const views={login:loginView,activate:activateView,join:joinView,home:homeView,ads:adsView,edit:editorView,banners:bannersView,bedit:bannerEditorView,stats:statsView,members:membersView,invite:inviteView};
  app.innerHTML=(views[route]||homeView)();const nav=$('#nav');const n=me&&!['login','activate','join'].includes(route)?navView():'';nav.innerHTML=n;nav.classList.toggle('hidden',!n);
- if(route==='ads')wireDrag();if(route==='edit')wireEditor();wireForms()}
+ if(route==='ads')wireDrag();if(route==='banners')wireDrag('banners');if(route==='edit')wireEditor();if(route==='bedit')wireBannerEditor();wireForms()}
 function wireForms(){
  const lf=$('#loginForm');if(lf)lf.onsubmit=async e=>{e.preventDefault();const b=lf.querySelector('button[type=submit]');b.disabled=true;const{error}=await sb.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});b.disabled=false;if(error)return err(error);boot()};
  const fg=$('#forgot');if(fg)fg.onclick=async()=>{const e=$('#email').value.trim();if(!e)return toast('اكتب بريدك أولاً');const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.href.split('#')[0]});toast(error?'تعذّر الإرسال. اطلب من المدير رمز دعوة جديد.':'إن كان البريد مسجلاً فستصله رسالة لإعادة التعيين.')};
@@ -357,10 +414,13 @@ function wireForms(){
   sc.onclick=async()=>{if(navigator.share)try{await navigator.share({text:msg})}catch(_){}else{await navigator.clipboard.writeText(msg);toast('نُسخت الرسالة')}};
   $('#copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(inv.code);toast('نُسخ الرمز')}catch(_){toast(inv.code)}}}
 }
-document.addEventListener('click',async e=>{const t=e.target.closest('[data-go],[data-edit],[data-filter],[data-toggle],[data-range],[data-role],[data-perm],[data-member]');if(!t)return;
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-go],[data-edit],[data-bedit],[data-btoggle],[data-stat],[data-filter],[data-toggle],[data-range],[data-role],[data-perm],[data-member]');if(!t)return;
  if(t.dataset.toggle){e.stopPropagation();const a=ads.find(x=>String(x.id)===t.dataset.toggle);const next=a.status==='live'?'paused':'live';t.disabled=true;
   const{error}=await sb.from('ads').update({status:next}).eq('id',a.id);if(error){err(error);t.disabled=false;return}toast(next==='live'?'شُغّل':'أوقف');await loadAds();return render()}
- if(t.dataset.go)return go(t.dataset.go);if(t.dataset.edit)return go('edit',t.dataset.edit);
+ if(t.dataset.btoggle){e.stopPropagation();const a=banners.find(x=>String(x.id)===t.dataset.btoggle);const next=a.status==='live'?'paused':'live';t.disabled=true;
+  const{error}=await sb.from('banners').update({status:next}).eq('id',a.id);if(error){err(error);t.disabled=false;return}toast(next==='live'?'شُغّل':'أوقف');await loadBanners();return render()}
+ if(t.dataset.go)return go(t.dataset.go,t.dataset.p);if(t.dataset.edit)return go('edit',t.dataset.edit);if(t.dataset.bedit)return go('bedit',t.dataset.bedit);
+ if(t.dataset.stat){statKind=t.dataset.stat;return render()}
  if(t.dataset.filter){filter=t.dataset.filter;return render()}if(t.dataset.range){range=+t.dataset.range;return render()}
  if(t.dataset.role){keepInv();inv.role=t.dataset.role;if(inv.role==='custom'&&!inv.perms.length)inv.perms=['view'];return render()}
  if(t.dataset.perm){keepInv();const cur=inv.role==='custom'?inv.perms:ROLE_PERMS[inv.role].filter(p=>p!=='members');const p=t.dataset.perm;inv.perms=cur.includes(p)?cur.filter(x=>x!==p):[...cur,p];inv.role='custom';return render()}
