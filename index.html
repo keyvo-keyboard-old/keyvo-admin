@@ -45,11 +45,11 @@ input[dir=ltr]{text-align:left}
 .tg[aria-checked=true]{background:var(--acc)}.tg[aria-checked=true]:after{right:21px}.tg:disabled{opacity:.45}
 .filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}.filters button{height:34px;padding:0 14px;border-radius:17px;font-size:13px;font-weight:600;background:var(--card);color:var(--sub);border:1px solid var(--line);white-space:nowrap}
 .filters button[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
-.ad{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px;display:flex;gap:12px;align-items:center;cursor:pointer}
-.ad.drag{border-color:var(--acc);box-shadow:0 12px 28px rgba(26,95,232,.25);opacity:.95}
+.kv-row{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px;display:flex;gap:12px;align-items:center;cursor:pointer}
+.kv-row.drag{border-color:var(--acc);box-shadow:0 12px 28px rgba(26,95,232,.25);opacity:.95}
 .grip{color:var(--mute);touch-action:none;padding:8px 2px;cursor:grab;background:none;border:0}
 .thumb{width:64px;height:64px;border-radius:14px;background:var(--card2) center/cover;flex:none}
-.ad .b{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}.ad .n{display:flex;align-items:center;gap:8px}.ad .n b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kv-row .b{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}.kv-row .n{display:flex;align-items:center;gap:8px}.kv-row .n b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:6px;text-align:right;color:var(--ink);font:inherit;width:100%;position:relative}
@@ -81,9 +81,9 @@ nav button[aria-current=page]{color:var(--acc);font-weight:600}nav button[aria-c
 .preview{background:var(--card2);border:1px solid var(--line);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .phone{align-self:center;width:230px;border-radius:26px;background:#0C1424;border:5px solid #2A3550;padding:12px 10px;display:flex;flex-direction:column;gap:8px;color:#F2F6FC}
 .phone.light{background:#EEF3FB;border-color:#0E1A2E;color:#0E1A2E}.phone .ph{height:30px;border-radius:10px;background:#162033}.phone.light .ph{background:#fff}
-.banner{border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1A5FE8,#6E46E5) center/cover;padding:12px;display:flex;flex-direction:column;gap:4px;color:#fff;min-height:118px;position:relative}
-.banner:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,.05))}.banner>*{position:relative}
-.banner .cta{align-self:flex-start;margin-top:4px;padding:4px 12px;border-radius:10px;background:#fff;color:#1A5FE8;font-size:10.5px;font-weight:700}
+.kv-hero{border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1A5FE8,#6E46E5) center/cover;padding:12px;display:flex;flex-direction:column;gap:4px;color:#fff;min-height:118px;position:relative}
+.kv-hero:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,.05))}.kv-hero>*{position:relative}
+.kv-hero .cta{align-self:flex-start;margin-top:4px;padding:4px 12px;border-radius:10px;background:#fff;color:#1A5FE8;font-size:10.5px;font-weight:700}
 .upload{min-height:76px;border-radius:16px;border:1.5px dashed var(--line);display:flex;align-items:center;gap:12px;padding:10px 14px;color:var(--sub);cursor:pointer}
 .code{font:700 28px Inter,monospace;letter-spacing:4px;text-align:center;padding:14px;border-radius:16px;background:var(--field);border:1px dashed var(--acc);color:var(--ink)}
 #toast{position:fixed;top:16px;right:50%;transform:translateX(50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;font-weight:600;font-size:14px;z-index:20;display:none;max-width:90%}
@@ -136,11 +136,15 @@ const STATUS={live:['نشط','c-live'],pending:['بانتظار الموافقة
 const DAYS=['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
 const ri=(r,s=44)=>{const R=ROLES[r]||ROLES.custom;return `<span class="ri" style="width:${s}px;height:${s}px;background:${R.c}22;color:${R.c};border:1px solid ${R.c}55">${ic(R.i,s*.45)}</span>`};
 
+let switches={ads:true,banners:true},switchesReady=false;
 let me=null,ads=[],daily=[],banners=[],bdaily=[],statKind='ad',metric='clicks',itemKind='ad',itemRange=30,route='home',param=null,filter='all',range=7,members=[],audit=[];
 const can=p=>!!me&&me.perms.includes(p);
 function toast(t){const m=$('#toast');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3200)}
 function err(e){const m=String(e&&e.message||e);toast(({'invalid invitation':'الرمز غير صحيح أو انتهت صلاحيته','not allowed':'ليست لديك صلاحية لهذا','Invalid login credentials':'البريد أو كلمة المرور غير صحيحة','already a member':'هذا البريد مشرف بالفعل','live or paused ads need a manager':'الإعلان المنشور يعدّله المدير فقط'})[m]||('تعذّر: '+m))}
-function imageUrl(p){return p?`${SUPABASE_URL}/storage/v1/object/public/ads/${encodeURIComponent(p)}`:''}
+// New images live in the "media" bucket (path prefix m/): some browsers' ad blockers hide any URL containing /ads/.
+const bucketOf=p=>String(p||'').startsWith('m/')?'media':'ads';
+function imageUrl(p){return p?`${SUPABASE_URL}/storage/v1/object/public/${bucketOf(p)}/${encodeURI(p)}`:''}
+const store=p=>sb.storage.from(bucketOf(p));
 function theme(t){if(t)try{localStorage.setItem('kv-theme',t)}catch(_){};let v='dark';try{v=localStorage.getItem('kv-theme')||'dark'}catch(_){};document.documentElement.dataset.theme=v}
 theme();
 
@@ -160,6 +164,7 @@ function backbar(title,extra=''){return `<div class="top" style="justify-content
 // ---------- data ----------
 async function loadAds(){if(!(can('view')||can('stats')))return ads=[];const{data,error}=await sb.from('ads').select('*').order('sort_order').order('created_at');if(error)throw error;ads=data||[]}
 async function loadStats(days=30){if(!can('stats'))return daily=bdaily=[];const[a,b]=await Promise.all([sb.rpc('panel_daily',{p_days:days}),sb.rpc('panel_banner_daily',{p_days:days})]);if(a.error)throw a.error;if(b.error)throw b.error;daily=(a.data||[]).map(r=>({...r,day:String(r.day)}));bdaily=(b.data||[]).map(r=>({...r,day:String(r.day)}))}
+async function loadSwitches(){const{data,error}=await sb.from('panel_switches').select('kind,enabled');switchesReady=!error;if(!error)(data||[]).forEach(r=>switches[r.kind]=r.enabled)}
 async function loadBanners(){if(!(can('view')||can('stats')))return banners=[];const{data,error}=await sb.from('banners').select('*').order('sort_order').order('created_at');if(error)throw error;banners=data||[]}
 async function loadMembers(){if(!can('members'))return;const[m,a]=await Promise.all([sb.from('panel_members').select('email,name,role,perms,is_owner,active,user_id,last_seen,invite_expires').order('created_at'),sb.from('panel_audit').select('*').order('at',{ascending:false}).limit(20)]);if(m.error)throw m.error;members=m.data||[];audit=a.data||[]}
 
@@ -172,7 +177,7 @@ async function boot(){
  if(!data){me=null;return show('join')}
  me=data;await refresh();show(can('view')||can('stats')?(can('view')?'home':'stats'):'members')
 }
-async function refresh(){try{await Promise.all([loadAds(),loadBanners(),loadStats(30),loadMembers()])}catch(e){err(e)}}
+async function refresh(){try{await Promise.all([loadAds(),loadBanners(),loadStats(30),loadMembers(),loadSwitches().catch(()=>{})])}catch(e){err(e)}}
 
 function loginView(){return `<div style="height:40px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:12px"><span class="logo" aria-hidden="true">K</span><h1>لوحة إدارة Keyvo</h1><span class="muted center">إدارة العروض داخل التطبيق ومتابعة أدائها</span></div>
 <form class="card" id="loginForm" style="padding:18px;gap:14px">
@@ -194,13 +199,14 @@ function joinView(){return `<div style="height:40px"></div>${topBar('حسابك 
 // ---------- home ----------
 function homeView(){
  const all=daily.concat(bdaily);
- const live=ads.filter(liveNow).length+banners.filter(liveNow).length,pending=[...ads.filter(a=>a.status==='pending').map(a=>({...a,k:'edit'})),...banners.filter(a=>a.status==='pending').map(a=>({...a,k:'bedit'}))];
+ const live=(switches.ads?ads.filter(liveNow).length:0)+(switches.banners?banners.filter(liveNow).length:0),pending=[...ads.filter(a=>a.status==='pending').map(a=>({...a,k:'edit'})),...banners.filter(a=>a.status==='pending').map(a=>({...a,k:'bedit'}))];
  const t=totals(1,null,all),y={im:0,cl:0};const yk=dayKey(new Date(Date.now()-864e5));all.forEach(r=>{if(r.day===yk){y.im+=+r.impressions;y.cl+=+r.clicks}});
  const ctr=t.im?t.cl/t.im*100:0,yctr=y.im?y.cl/y.im*100:0;
  const best=[...ads.map(a=>({a,...totals(7,a.id)})),...banners.map(a=>({a,...totals(7,a.id,bdaily)}))].filter(x=>x.im).sort((p,q)=>q.cl/q.im-p.cl/p.im).slice(0,3);
  const hour=+new Date().toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'Asia/Riyadh'});
  return `${topBar(hour<12?'صباح الخير':'مساء الخير',me.name?esc(me.name)+' · '+ROLES[me.role]?.n:ROLES[me.role]?.n,`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`)}
  ${can('publish')&&pending.length?`<div class="notice"><span style="color:var(--warn)">${ic('bell')}</span><span style="flex:1;display:flex;flex-direction:column"><b>${pending.length===1?'بانتظار موافقتك':pending.length+' بانتظار موافقتك'}</b><span class="muted ellipsis">${pending[0].k==='bedit'?'بنر':'إعلان'} «${esc(pending[0].title)}»</span></span><button class="btn warn" data-go="${pending[0].k}" data-p="${esc(pending[0].id)}">مراجعة</button></div>`:''}
+ ${['ads','banners'].filter(k=>!switches[k]).map(k=>`<div class="notice" style="background:var(--badBg)"><span style="color:var(--bad)">${ic('bell')}</span><span style="flex:1"><b>${k==='ads'?'الإعلانات':'البنرات'} موقوفة كلها</b></span><button class="btn" style="width:auto;height:34px;font-size:13px" data-go="${k}">فتح</button></div>`).join('')}
  ${can('stats')?`<div class="kpis">${kpi('live','نشطة الآن',live,'<span class="d sub">إعلانات وبنرات</span>',can('view')?'data-go="live"':'')}${kpi('eye','ظهور اليوم',fmt(t.im),delta(t.im,y.im),'data-stats="1:impressions"')}${kpi('tap','ضغطات اليوم',fmt(t.cl),delta(t.cl,y.cl),'data-stats="1:clicks"')}${kpi('pct','نسبة الضغط',ctr.toFixed(1)+'%',delta(ctr,yctr),'data-stats="7:clicks"')}</div>
  <div class="card"><div class="top"><h2>الظهور — آخر 7 أيام</h2><span class="sub">الإعلانات والبنرات</span></div>${bars(series(7,'impressions',all))}</div>
  <div class="card"><h2>الأفضل أداءً</h2>${best.length?best.map(x=>`<div class="tap" data-item="${x.a.link?'banner':'ad'}:${esc(x.a.id)}" style="display:flex;align-items:center;gap:12px"><span class="thumb" style="width:${x.a.link?64:44}px;height:44px;border-radius:12px;background-image:url(&quot;${esc(imageUrl(x.a.image_path))}&quot;)"></span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><b class="ellipsis">${esc(x.a.title)}</b><span class="sub num">${fmt(x.im)} ظهور · ${fmt(x.cl)} ضغطة</span></span><b class="num" style="color:var(--ok)">${(x.cl/x.im*100).toFixed(1)}%</b></div>`).join(''):'<span class="muted">لا توجد بيانات بعد. تظهر هنا بعد أول ظهور للإعلانات في التطبيق.</span>'}</div>`
@@ -212,18 +218,19 @@ function adsView(){
  const names={all:'الكل',live:'نشط',pending:'بانتظار الموافقة',draft:'مسودة',paused:'متوقف'};
  const list=groups[filter]||ads;const reorder=can('publish')&&filter==='all'&&ads.length>1;
  return `${topBar('الإعلانات',reorder?'الترتيب هنا = ترتيب الظهور في التطبيق · الأرقام لآخر 30 يوماً':'الأرقام لآخر 30 يوماً',can('edit')?`<button class="fab" data-edit="new" aria-label="إعلان جديد">${ic('plus',24)}</button>`:'')}
+ ${masterCard('ads')}
  <div class="filters" role="group" aria-label="تصفية">${Object.keys(names).filter(k=>k==='all'||groups[k].length).map(k=>`<button data-filter="${k}" aria-pressed="${filter===k}">${names[k]} <span class="num">${groups[k].length}</span></button>`).join('')}</div>
  <div id="list" style="display:flex;flex-direction:column;gap:12px">${list.length?list.map(a=>adCard(a,reorder)).join(''):`<div class="card muted center">${ads.length?'لا شيء هنا':'لا توجد إعلانات بعد'}${can('edit')&&!ads.length?`<button class="btn primary" data-edit="new">${ic('plus',18)}أضف أول إعلان</button>`:''}</div>`}</div>
  ${reorder?`<span class="sub center">اسحب ⋮⋮ لتغيير الترتيب</span>`:''}`}
 function adCard(a,reorder){const[s,c]=statusOf(a);const t=totals(30,a.id);const on=a.status==='live';
  const sched=a.status==='live'&&a.starts_at&&Date.parse(a.starts_at)>Date.now()?'يبدأ '+new Date(a.starts_at).toLocaleString('ar-SA-u-nu-latn',{dateStyle:'medium',timeStyle:'short'}):'';
- return `<div class="ad" data-id="${esc(a.id)}" data-edit="${esc(a.id)}">${reorder?`<button class="grip" aria-label="اسحب لترتيب «${esc(a.title)}»" data-grip>${ic('grip',18)}</button>`:''}
+ return `<div class="kv-row" data-id="${esc(a.id)}" data-edit="${esc(a.id)}">${reorder?`<button class="grip" aria-label="اسحب لترتيب «${esc(a.title)}»" data-grip>${ic('grip',18)}</button>`:''}
  <span class="thumb" style="background-image:url(&quot;${esc(imageUrl(a.image_path))}&quot;)"></span>
  <span class="b"><span class="n"><b>${esc(a.title)}</b><span class="chip ${c}">${s}</span></span><span class="muted ellipsis">${esc(a.description)}</span><span class="sub">${sched||(can('stats')?`<span class="num">${fmt(t.im)}</span> ظهور · <span class="num">${fmt(t.cl)}</span> ضغطة`:'')}</span></span>
  ${can('publish')&&(a.status==='live'||a.status==='paused')?`<button class="tg" role="switch" aria-checked="${on}" aria-label="${on?'إيقاف':'تشغيل'} «${esc(a.title)}»" data-toggle="${esc(a.id)}"></button>`:''}</div>`}
 
 function wireDrag(table='ads'){const list=$('#list');if(!list)return;const arr=()=>table==='ads'?ads:banners;const reload=()=>table==='ads'?loadAds():loadBanners();let drag=null,moved=false;
- list.querySelectorAll('[data-grip]').forEach(g=>{g.addEventListener('click',e=>e.stopPropagation());g.addEventListener('pointerdown',e=>{e.preventDefault();drag=g.closest('.ad');drag.classList.add('drag');g.setPointerCapture(e.pointerId);moved=false});
+ list.querySelectorAll('[data-grip]').forEach(g=>{g.addEventListener('click',e=>e.stopPropagation());g.addEventListener('pointerdown',e=>{e.preventDefault();drag=g.closest('.kv-row');drag.classList.add('drag');g.setPointerCapture(e.pointerId);moved=false});
  g.addEventListener('pointermove',e=>{if(!drag)return;const over=[...list.children].find(el=>{const r=el.getBoundingClientRect();return el!==drag&&e.clientY>r.top&&e.clientY<r.bottom});
   if(over){const r=over.getBoundingClientRect();list.insertBefore(drag,e.clientY<r.top+r.height/2?over:over.nextSibling);moved=true}});
  const end=async()=>{if(!drag)return;drag.classList.remove('drag');drag=null;if(!moved)return;const ids=[...list.children].map(el=>el.dataset.id);
@@ -231,7 +238,7 @@ function wireDrag(table='ads'){const list=$('#list');if(!list)return;const arr=(
   try{for(const c of changes){const{error}=await sb.from(table).update({sort_order:c.i}).eq('id',c.id);if(error)throw error}toast('تم حفظ الترتيب');await reload()}catch(e){err(e);await reload();render()}};
  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end)});
  // Keyboard: arrows move the focused item.
- list.querySelectorAll('[data-grip]').forEach(g=>g.addEventListener('keydown',async e=>{if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;e.preventDefault();const el=g.closest('.ad');const sib=e.key==='ArrowUp'?el.previousElementSibling:el.nextElementSibling;if(!sib)return;
+ list.querySelectorAll('[data-grip]').forEach(g=>g.addEventListener('keydown',async e=>{if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;e.preventDefault();const el=g.closest('.kv-row');const sib=e.key==='ArrowUp'?el.previousElementSibling:el.nextElementSibling;if(!sib)return;
   list.insertBefore(el,e.key==='ArrowUp'?sib:sib.nextSibling);g.focus();const ids=[...list.children].map(x=>x.dataset.id);for(const[i,id]of ids.entries()){const a=arr().find(x=>String(x.id)===id);if(a&&a.sort_order!==i){const{error}=await sb.from(table).update({sort_order:i}).eq('id',id);if(error)return err(error)}}await reload()}))}
 
 // ---------- editor ----------
@@ -273,7 +280,7 @@ function wireEditor(){const f=$('#adForm');if(!f)return;
   ['title','description','cta','interval_seconds','destination','starts_at','ends_at'].forEach(k=>{const el=document.querySelector(`[name=${k}]`);if(el)draft[k]=el.type==='datetime-local'?(el.value?new Date(el.value).toISOString():null):el.value});file=x;render()});
  document.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{previewLight=b.dataset.pv==='1';$('.phone').classList.toggle('light',previewLight);document.querySelectorAll('[data-pv]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
  document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveAd(b.dataset.save,b));
- const del=$('#delAd');if(del)del.onclick=async()=>{if(!confirm(`حذف «${draft.title}» نهائياً؟`))return;const{error}=await sb.from('ads').delete().eq('id',draft.id);if(error)return err(error);if(draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);toast('حُذف');await loadAds();go('ads')}}
+ const del=$('#delAd');if(del)del.onclick=async()=>{if(!confirm(`حذف «${draft.title}» نهائياً؟`))return;const{error}=await sb.from('ads').delete().eq('id',draft.id);if(error)return err(error);if(draft.image_path)await store(draft.image_path).remove([draft.image_path]);toast('حُذف');await loadAds();go('ads')}}
 async function saveAd(status,btn){const f=$('#adForm');const val=k=>(f.elements[k]?.value??document.querySelector(`[name=${k}]`)?.value??'').trim();
  const row={title:val('title'),description:val('description'),cta:val('cta')||'تحميل',destination:val('destination'),interval_seconds:Math.min(60,Math.max(5,parseInt(val('interval_seconds')||'6'))),
   starts_at:val('starts_at')?new Date(val('starts_at')).toISOString():null,ends_at:val('ends_at')?new Date(val('ends_at')).toISOString():null,status};
@@ -282,21 +289,28 @@ async function saveAd(status,btn){const f=$('#adForm');const val=k=>(f.elements[
  if(row.starts_at&&row.ends_at&&row.ends_at<=row.starts_at)return toast('تاريخ الانتهاء قبل البداية');
  if(!draft.id&&!file)return toast('اختر صورة');
  btn.disabled=true;let uploaded=null;
- try{if(file){const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[file.type];uploaded=`${crypto.randomUUID()}.${ext}`;
-   const{error}=await sb.storage.from('ads').upload(uploaded,file,{contentType:file.type,cacheControl:'3600'});if(error)throw error;row.image_path=uploaded}
+ try{if(file){const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[file.type];uploaded=`m/${crypto.randomUUID()}.${ext}`;
+   const{error}=await store(uploaded).upload(uploaded,file,{contentType:file.type,cacheControl:'3600'});if(error)throw error;row.image_path=uploaded}
   if(!draft.id)row.sort_order=ads.length?Math.max(...ads.map(a=>a.sort_order||0))+1:0;
   const{data,error}=draft.id?await sb.from('ads').update(row).eq('id',draft.id).select().single():await sb.from('ads').insert(row).select().single();
-  if(error)throw error;if(uploaded&&draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);
+  if(error)throw error;if(uploaded&&draft.image_path)await store(draft.image_path).remove([draft.image_path]);
   toast(data.status==='live'?'نُشر ✓':data.status==='pending'?'أُرسل للمدير للموافقة':'حُفظ ✓');file=null;await loadAds();go('ads')}
- catch(e){if(uploaded)await sb.storage.from('ads').remove([uploaded]);err(e)}finally{btn.disabled=false}}
+ catch(e){if(uploaded)await store(uploaded).remove([uploaded]);err(e)}finally{btn.disabled=false}}
 
+// Master switch: hides every ad (or banner) in the app at once; each item keeps its own state.
+function masterCard(kind){if(!switchesReady||!can('publish'))return switches[kind]?'':`<div class="notice"><span style="color:var(--warn)">${ic('bell')}</span><b style="flex:1">${kind==='ads'?'الإعلانات':'البنرات'} موقوفة كلها الآن</b></div>`;
+ const on=switches[kind],name=kind==='ads'?'الإعلانات':'البنرات';
+ return `<div class="card" style="flex-direction:row;align-items:center;gap:12px;padding:12px 14px;${on?'':'background:var(--badBg);border-color:color-mix(in srgb,var(--bad) 40%,transparent)'}">
+ <span style="flex:1;display:flex;flex-direction:column;gap:2px"><b>${on?`إظهار ${name} في التطبيق`:`${name} موقوفة كلها`}</b><span class="sub">${on?`أطفئه لإيقاف كل ${name} مرة واحدة`:'لا يراها أحد الآن. شغّله ليعود ما كان منشوراً كما هو'}</span></span>
+ <button class="tg" role="switch" aria-checked="${on}" aria-label="إظهار ${name}" data-master="${kind}"></button></div>`}
 // ---------- banners (full designed images at the top of the Keyvo home) ----------
 function bannersView(){const reorder=can('publish')&&banners.length>1;
  return `${topBar('البنرات','صور كاملة أعلى الرئيسية في تطبيق Keyvo'+(reorder?' · الترتيب = ترتيب الظهور':''),can('edit')?`<button class="fab" data-bedit="new" aria-label="بنر جديد">${ic('plus',24)}</button>`:'')}
+ ${masterCard('banners')}
  <div id="list" style="display:flex;flex-direction:column;gap:14px">${banners.length?banners.map(b=>bannerCard(b,reorder)).join(''):`<div class="card muted center">لا توجد بنرات بعد${can('edit')?`<button class="btn primary" data-bedit="new">${ic('plus',18)}أضف أول بنر</button>`:''}</div>`}</div>
  ${reorder?`<span class="sub center">اسحب ⋮⋮ لتغيير الترتيب</span>`:''}`}
 function bannerCard(b,reorder){const[s,c]=statusOf(b);const t=totals(30,b.id,bdaily);const on=b.status==='live';
- return `<div class="ad" data-id="${esc(b.id)}" data-bedit="${esc(b.id)}" style="flex-direction:column;align-items:stretch;padding:10px;gap:10px">
+ return `<div class="kv-row" data-id="${esc(b.id)}" data-bedit="${esc(b.id)}" style="flex-direction:column;align-items:stretch;padding:10px;gap:10px">
  <span class="thumb" style="width:100%;height:auto;aspect-ratio:1200/630;border-radius:14px;background-image:url(&quot;${esc(imageUrl(b.image_path))}&quot;)"></span>
  <span style="display:flex;align-items:center;gap:10px">${reorder?`<button class="grip" aria-label="اسحب لترتيب «${esc(b.title)}»" data-grip>${ic('grip',18)}</button>`:''}
  <span class="b" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span class="n" style="display:flex;align-items:center;gap:8px"><b class="ellipsis">${esc(b.title)}</b><span class="chip ${c}">${s}</span></span>
@@ -327,7 +341,7 @@ function wireBannerEditor(){const f=$('#bForm');if(!f)return;
   ['title','link','interval_seconds','starts_at','ends_at'].forEach(k=>{const el=document.querySelector(`[name=${k}]`);if(el)draft[k]=el.type==='datetime-local'?(el.value?new Date(el.value).toISOString():null):el.value});file=x;render()});
  document.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{previewLight=b.dataset.pv==='1';$('.phone').classList.toggle('light',previewLight);document.querySelectorAll('[data-pv]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
  document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveBanner(b.dataset.save,b));
- const del=$('#delB');if(del)del.onclick=async()=>{if(!confirm(`حذف «${draft.title}» نهائياً؟`))return;const{error}=await sb.from('banners').delete().eq('id',draft.id);if(error)return err(error);if(draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);toast('حُذف');await loadBanners();go('banners')}}
+ const del=$('#delB');if(del)del.onclick=async()=>{if(!confirm(`حذف «${draft.title}» نهائياً؟`))return;const{error}=await sb.from('banners').delete().eq('id',draft.id);if(error)return err(error);if(draft.image_path)await store(draft.image_path).remove([draft.image_path]);toast('حُذف');await loadBanners();go('banners')}}
 const LINK_RE=/^(https:\/\/play\.google\.com\/store\/apps\/details\?id=[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+|https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(\/[^\s<>"]*)?)$/;
 async function saveBanner(status,btn){const val=k=>(document.querySelector(`[name=${k}]`)?.value??'').trim();
  const row={title:val('title'),link:val('link'),interval_seconds:Math.min(60,Math.max(3,parseInt(val('interval_seconds')||'5'))),
@@ -335,18 +349,18 @@ async function saveBanner(status,btn){const val=k=>(document.querySelector(`[nam
  if(!row.title)return toast('اكتب اسم البنر');if(!LINK_RE.test(row.link)||row.link.length>500)return toast('الرابط يجب أن يبدأ بـ https:// (رابط Google Play أو موقع)');
  if(row.starts_at&&row.ends_at&&row.ends_at<=row.starts_at)return toast('تاريخ الانتهاء قبل البداية');if(!draft.id&&!file)return toast('اختر صورة البنر');
  btn.disabled=true;let uploaded=null;
- try{if(file){const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[file.type];uploaded=`banners/${crypto.randomUUID()}.${ext}`;
-   const{error}=await sb.storage.from('ads').upload(uploaded,file,{contentType:file.type,cacheControl:'3600'});if(error)throw error;row.image_path=uploaded}
+ try{if(file){const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[file.type];uploaded=`m/${crypto.randomUUID()}.${ext}`;
+   const{error}=await store(uploaded).upload(uploaded,file,{contentType:file.type,cacheControl:'3600'});if(error)throw error;row.image_path=uploaded}
   if(!draft.id)row.sort_order=banners.length?Math.max(...banners.map(a=>a.sort_order||0))+1:0;
   const{data,error}=draft.id?await sb.from('banners').update(row).eq('id',draft.id).select().single():await sb.from('banners').insert(row).select().single();
-  if(error)throw error;if(uploaded&&draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);
+  if(error)throw error;if(uploaded&&draft.image_path)await store(draft.image_path).remove([draft.image_path]);
   toast(data.status==='live'?'نُشر ✓':data.status==='pending'?'أُرسل للمدير للموافقة':'حُفظ ✓');file=null;await loadBanners();go('banners')}
- catch(e){if(uploaded)await sb.storage.from('ads').remove([uploaded]);err(e)}finally{btn.disabled=false}}
+ catch(e){if(uploaded)await store(uploaded).remove([uploaded]);err(e)}finally{btn.disabled=false}}
 
 // ---------- live now: everything currently shown in the app ----------
-function liveView(){const items=[...ads.filter(liveNow).map(a=>['ad',a]),...banners.filter(liveNow).map(b=>['banner',b])];
+function liveView(){const items=[...(switches.ads?ads.filter(liveNow):[]).map(a=>['ad',a]),...(switches.banners?banners.filter(liveNow):[]).map(b=>['banner',b])];
  return `${backbar('نشطة الآن')}<span class="sub" style="padding:0 4px">ما يراه مستخدمو Keyvo الآن. اضغط أي عنصر لتفاصيله.</span>
- ${items.length?items.map(([k,a])=>{const t=totals(1,a.id,k==='ad'?daily:bdaily);return `<div class="ad" data-item="${k}:${esc(a.id)}"><span class="thumb" style="${k==='banner'?'width:96px;height:50px;border-radius:10px;':''}background-image:url(&quot;${esc(imageUrl(a.image_path))}&quot;)"></span><span class="b"><span class="n"><b>${esc(a.title)}</b><span class="chip c-draft">${k==='ad'?'إعلان · الإعدادات':'بنر · الرئيسية'}</span></span><span class="sub">اليوم: <span class="num">${fmt(t.im)}</span> ظهور · <span class="num">${fmt(t.cl)}</span> ضغطة</span></span><span class="sub">‹</span></div>`}).join(''):'<div class="card muted center">لا يوجد شيء منشور الآن</div>'}`}
+ ${items.length?items.map(([k,a])=>{const t=totals(1,a.id,k==='ad'?daily:bdaily);return `<div class="kv-row" data-item="${k}:${esc(a.id)}"><span class="thumb" style="${k==='banner'?'width:96px;height:50px;border-radius:10px;':''}background-image:url(&quot;${esc(imageUrl(a.image_path))}&quot;)"></span><span class="b"><span class="n"><b>${esc(a.title)}</b><span class="chip c-draft">${k==='ad'?'إعلان · الإعدادات':'بنر · الرئيسية'}</span></span><span class="sub">اليوم: <span class="num">${fmt(t.im)}</span> ظهور · <span class="num">${fmt(t.cl)}</span> ضغطة</span></span><span class="sub">‹</span></div>`}).join(''):'<div class="card muted center">لا يوجد شيء منشور الآن</div>'}`}
 // ---------- one item: its numbers over time ----------
 function itemView(){const [k,id]=String(param).split(':');const list=k==='ad'?ads:banners,src=k==='ad'?daily:bdaily;const a=list.find(x=>String(x.id)===id);if(!a)return '<div class="card muted">العنصر غير موجود</div>';
  const[s,c]=statusOf(a);const t=totals(itemRange,a.id,src);const rows=series(itemRange,'impressions',src.filter(r=>String(r.ad_id)===id));const cl=series(itemRange,'clicks',src.filter(r=>String(r.ad_id)===id));
@@ -378,7 +392,7 @@ function exportCsv(){const lines=[['اليوم','النوع','الاسم','ال�
 // ---------- members ----------
 function ago(t){if(!t)return'لم يدخل بعد';const m=(Date.now()-Date.parse(t))/6e4;return m<5?'متصل الآن':m<60?`قبل ${Math.round(m)} دقيقة`:m<1440?`قبل ${Math.round(m/60)} ساعة`:`قبل ${Math.round(m/1440)} يوم`}
 const ACT={'member.invited':['دعا','var(--acc)'],'member.joined':['فعّل حسابه','var(--ok)'],'member.suspended':['أوقف','var(--off)'],'member.activated':['أعاد تفعيل','var(--ok)'],'member.changed':['غيّر دور','var(--acc)'],'member.removed':['حذف','var(--bad)'],'member.reinvited':['أعاد دعوة','var(--acc)'],
- 'ad.live':['نشر','var(--ok)'],'ad.pending':['أرسل للموافقة','var(--warn)'],'ad.draft':['حفظ مسودة','var(--accInk)'],'ad.paused':['أوقف','var(--off)'],'ad.edited':['عدّل','var(--acc)'],'ad.deleted':['حذف','var(--bad)'],'banner.live':['نشر البنر','var(--ok)'],'banner.pending':['أرسل البنر للموافقة','var(--warn)'],'banner.draft':['حفظ مسودة البنر','var(--accInk)'],'banner.paused':['أوقف البنر','var(--off)'],'banner.edited':['عدّل البنر','var(--acc)'],'banner.deleted':['حذف البنر','var(--bad)']};
+ 'ad.live':['نشر','var(--ok)'],'ad.pending':['أرسل للموافقة','var(--warn)'],'ad.draft':['حفظ مسودة','var(--accInk)'],'ad.paused':['أوقف','var(--off)'],'ad.edited':['عدّل','var(--acc)'],'ad.deleted':['حذف','var(--bad)'],'banner.live':['نشر البنر','var(--ok)'],'banner.pending':['أرسل البنر للموافقة','var(--warn)'],'banner.draft':['حفظ مسودة البنر','var(--accInk)'],'banner.paused':['أوقف البنر','var(--off)'],'banner.edited':['عدّل البنر','var(--acc)'],'banner.deleted':['حذف البنر','var(--bad)'],'switch.off':['أوقف','var(--bad)'],'switch.on':['أعاد تشغيل','var(--ok)']};
 function membersView(){const count=r=>members.filter(m=>m.role===r).length;
  return `${topBar('المشرفون','الأدوار تحدد ما يراه كل مشرف',`<span style="display:flex;gap:8px"><button class="pill" data-go="invite">${ic('plus',18)}إضافة مشرف</button>${can('view')||can('stats')?'':`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`}</span>`)}
  <div class="roles">${['manager','editor','analyst'].map(r=>`<div>${ri(r,36)}<span>${ROLES[r].n}</span><b class="num">${count(r)}</b></div>`).join('')}</div>
@@ -439,11 +453,14 @@ function wireForms(){
   sc.onclick=async()=>{if(navigator.share)try{await navigator.share({text:msg})}catch(_){}else{await navigator.clipboard.writeText(msg);toast('نُسخت الرسالة')}};
   $('#copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(inv.code);toast('نُسخ الرمز')}catch(_){toast(inv.code)}}}
 }
-document.addEventListener('click',async e=>{const t=e.target.closest('[data-item],[data-stats],[data-metric],[data-irange],[data-go],[data-edit],[data-bedit],[data-btoggle],[data-stat],[data-filter],[data-toggle],[data-range],[data-role],[data-perm],[data-member]');if(!t)return;
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-master],[data-item],[data-stats],[data-metric],[data-irange],[data-go],[data-edit],[data-bedit],[data-btoggle],[data-stat],[data-filter],[data-toggle],[data-range],[data-role],[data-perm],[data-member]');if(!t)return;
  if(t.dataset.toggle){e.stopPropagation();const a=ads.find(x=>String(x.id)===t.dataset.toggle);const next=a.status==='live'?'paused':'live';t.disabled=true;
   const{error}=await sb.from('ads').update({status:next}).eq('id',a.id);if(error){err(error);t.disabled=false;return}toast(next==='live'?'شُغّل':'أوقف');await loadAds();return render()}
  if(t.dataset.btoggle){e.stopPropagation();const a=banners.find(x=>String(x.id)===t.dataset.btoggle);const next=a.status==='live'?'paused':'live';t.disabled=true;
   const{error}=await sb.from('banners').update({status:next}).eq('id',a.id);if(error){err(error);t.disabled=false;return}toast(next==='live'?'شُغّل':'أوقف');await loadBanners();return render()}
+ if(t.dataset.master){const k=t.dataset.master,next=!switches[k],name=k==='ads'?'الإعلانات':'البنرات';
+  if(!next&&!confirm(`إيقاف كل ${name} في التطبيق الآن؟`))return;t.disabled=true;
+  const{error}=await sb.from('panel_switches').update({enabled:next}).eq('kind',k);t.disabled=false;if(error)return err(error);switches[k]=next;toast(next?`عادت ${name}`:`أوقفت كل ${name}`);await loadMembers();return render()}
  if(t.dataset.item)return show('item',t.dataset.item);
  if(t.dataset.stats){const[r,m]=t.dataset.stats.split(':');range=+r;metric=m;return show('stats')}
  if(t.dataset.metric){metric=t.dataset.metric;return render()}if(t.dataset.irange){itemRange=+t.dataset.irange;return render()}
