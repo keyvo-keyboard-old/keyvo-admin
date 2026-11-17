@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>لوحة إدارة Keyvo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#0C1424;--card:#162033;--card2:#1C2840;--line:#26344E;--ink:#F2F6FC;--sub:#A9B7CD;--mute:#7D8BA3;--acc:#4D7CFF;--accBg:rgba(77,124,255,.16);--accInk:#BFD3FF;
+--ok:#3DD68C;--okBg:rgba(61,214,140,.14);--warn:#F5B94A;--warnBg:rgba(245,185,74,.14);--off:#7D8BA3;--offBg:rgba(125,139,163,.16);--bad:#FF7A7F;--badBg:rgba(229,72,77,.16);--field:#0F192C;--nav:rgba(22,32,51,.94)}
+html[data-theme=light]{--bg:#EEF3FB;--card:#FFFFFF;--card2:#F5F8FD;--line:#D5DFEE;--ink:#0E1A2E;--sub:#4A5A74;--mute:#6A778C;--acc:#1A5FE8;--accBg:#E3ECFF;--accInk:#1A4FC4;
+--ok:#14894F;--okBg:#E2F6EC;--warn:#A86A00;--warnBg:#FFF2D9;--off:#6A778C;--offBg:#EDF0F5;--bad:#C62F35;--badBg:#FDE8E9;--field:#F5F8FD;--nav:rgba(255,255,255,.96)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'IBM Plex Sans Arabic',system-ui,sans-serif}
+.num{font-family:Inter,system-ui,sans-serif}
+main{max-width:560px;margin:0 auto;padding:18px 18px 110px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:24px;margin:0;font-weight:700}h2{font-size:16px;margin:0;font-weight:700}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.top .t{display:flex;flex-direction:column;gap:2px}
+.sub{font-size:13px;color:var(--mute)}.muted{color:var(--sub);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.icon{width:40px;height:40px;border-radius:20px;background:var(--card);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;color:var(--sub);flex:none;cursor:pointer}
+svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit;cursor:pointer}
+.btn{height:50px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 14px}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}.btn.warn{background:var(--warn);border-color:var(--warn);color:#fff}.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.5}
+.pill{height:40px;padding:0 14px;border-radius:14px;background:var(--acc);color:#fff;border:0;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px;flex:none}
+.fab{width:56px;height:56px;border-radius:18px;background:var(--acc);color:#fff;border:0;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(26,95,232,.4);flex:none}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--sub)}
+.in{height:48px;border-radius:14px;background:var(--field);border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--mute)}
+.in input,.in select,.in textarea{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:15px;outline:none;height:100%}
+.in:focus-within{border-color:var(--acc)}
+.in.area{height:auto;padding:10px 14px}.in textarea{resize:vertical;min-height:60px}
+input[dir=ltr]{text-align:left}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap}
+.chip:before{content:"";width:6px;height:6px;border-radius:3px;background:currentColor}
+.c-live{background:var(--okBg);color:var(--ok)}.c-pending{background:var(--warnBg);color:var(--warn)}.c-draft{background:var(--accBg);color:var(--accInk)}.c-paused,.c-off{background:var(--offBg);color:var(--off)}.c-sched{background:var(--warnBg);color:var(--warn)}
+.tg{width:44px;height:26px;border-radius:13px;background:var(--line);position:relative;border:0;padding:0;flex:none}
+.tg:after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.15s}
+.tg[aria-checked=true]{background:var(--acc)}.tg[aria-checked=true]:after{right:21px}.tg:disabled{opacity:.45}
+.filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}.filters button{height:34px;padding:0 14px;border-radius:17px;font-size:13px;font-weight:600;background:var(--card);color:var(--sub);border:1px solid var(--line);white-space:nowrap}
+.filters button[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.ad{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px;display:flex;gap:12px;align-items:center;cursor:pointer}
+.ad.drag{border-color:var(--acc);box-shadow:0 12px 28px rgba(26,95,232,.25);opacity:.95}
+.grip{color:var(--mute);touch-action:none;padding:8px 2px;cursor:grab;background:none;border:0}
+.thumb{width:64px;height:64px;border-radius:14px;background:var(--card2) center/cover;flex:none}
+.ad .b{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}.ad .n{display:flex;align-items:center;gap:8px}.ad .n b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.kpi .l{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}.kpi .l i{width:30px;height:30px;border-radius:10px;background:var(--accBg);color:var(--acc);display:flex;align-items:center;justify-content:center}
+.kpi .l i svg{width:16px;height:16px}.kpi .v{font-size:24px;font-weight:700}.kpi .d{font-size:12px;font-weight:600}
+.up{color:var(--ok)}.down{color:var(--bad)}
+.bars{display:flex;align-items:flex-end;gap:8px;height:110px}.bars span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;font-size:11px;color:var(--mute)}
+.bars i{width:100%;max-width:26px;border-radius:8px;background:var(--accBg);min-height:4px}.bars span:last-child i{background:var(--acc)}
+.seg{display:flex;padding:4px;border-radius:14px;background:var(--card2);border:1px solid var(--line)}.seg button{flex:1;height:34px;border-radius:11px;border:0;background:transparent;color:var(--mute);font-weight:600;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+table{width:100%;border-collapse:collapse;font-size:14px}th{font-size:11.5px;color:var(--mute);font-weight:500;text-align:right;padding:4px}td{padding:8px 4px;border-top:1px solid var(--line)}
+.notice{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:var(--warnBg);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+.notice b{font-size:14px}.notice .btn{width:auto;height:34px;border-radius:12px;font-size:13px}
+.member{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.member:first-child{border-top:0}
+.ri{width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;flex:none}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.roles div{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:16px;background:var(--card2);border:1px solid var(--line);font-size:11.5px;font-weight:600;text-align:center}
+.roles .ri{width:36px;height:36px}.roles b{font-size:18px}
+.opt{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--card);text-align:right;color:var(--ink);width:100%}
+.opt[aria-checked=true]{border:2px solid var(--acc);background:var(--accBg)}.opt .dot{width:22px;height:22px;border-radius:11px;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center}
+.opt[aria-checked=true] .dot{border-color:var(--acc)}.opt[aria-checked=true] .dot:after{content:"";width:10px;height:10px;border-radius:5px;background:var(--acc)}
+.perm{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:14px}
+.log{display:flex;gap:10px;font-size:13px;align-items:center}.log i{width:8px;height:8px;border-radius:4px;flex:none}
+nav{position:fixed;bottom:14px;right:50%;transform:translateX(50%);width:min(532px,calc(100% - 28px));height:64px;border-radius:22px;background:var(--nav);border:1px solid var(--line);display:flex;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.18);backdrop-filter:blur(12px);z-index:5}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--mute);background:none;border:0}
+nav button span{width:44px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+nav button[aria-current=page]{color:var(--acc);font-weight:600}nav button[aria-current=page] span{background:var(--accBg)}
+.preview{background:var(--card2);border:1px solid var(--line);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.phone{align-self:center;width:230px;border-radius:26px;background:#0C1424;border:5px solid #2A3550;padding:12px 10px;display:flex;flex-direction:column;gap:8px;color:#F2F6FC}
+.phone.light{background:#EEF3FB;border-color:#0E1A2E;color:#0E1A2E}.phone .ph{height:30px;border-radius:10px;background:#162033}.phone.light .ph{background:#fff}
+.banner{border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1A5FE8,#6E46E5) center/cover;padding:12px;display:flex;flex-direction:column;gap:4px;color:#fff;min-height:118px;position:relative}
+.banner:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,.05))}.banner>*{position:relative}
+.banner .cta{align-self:flex-start;margin-top:4px;padding:4px 12px;border-radius:10px;background:#fff;color:#1A5FE8;font-size:10.5px;font-weight:700}
+.upload{min-height:76px;border-radius:16px;border:1.5px dashed var(--line);display:flex;align-items:center;gap:12px;padding:10px 14px;color:var(--sub);cursor:pointer}
+.code{font:700 28px Inter,monospace;letter-spacing:4px;text-align:center;padding:14px;border-radius:16px;background:var(--field);border:1px dashed var(--acc);color:var(--ink)}
+#toast{position:fixed;top:16px;right:50%;transform:translateX(50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;font-weight:600;font-size:14px;z-index:20;display:none;max-width:90%}
+.hidden{display:none!important}.center{text-align:center}.link{color:var(--acc);font-weight:600;background:none;border:0;font-size:13px}
+.logo{width:64px;height:64px;border-radius:19px;background:linear-gradient(140deg,#1A5FE8,#6E46E5);display:flex;align-items:center;justify-content:center;color:#fff;font:700 29px Inter,sans-serif}
+.menu{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:min(560px,100%);border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+.sheet .btn{justify-content:flex-start}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="toast" role="status" aria-live="polite"></div>
+<main id="app" aria-live="polite"></main>
+<nav id="nav" class="hidden" aria-label="التنقل"></nav>
+<script>
+'use strict';
+// Public values only: the publishable key can read live ads and nothing else; every team action
+// is checked again by the database (roles, row-level security, triggers).
+const SUPABASE_URL='https://pfwawchdlqtvncitrbvd.supabase.co';
+const SUPABASE_KEY='sb_publishable_uquUq9AuTWEN2OeMna9f6g_D6cKReTD';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const I={home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>',ads:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 15l5-4 4 3 3-2 6 4"/>',
+chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .7 3.5 2.4 3.5 5.2"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+tap:'<path d="M9 11V5a2 2 0 0 1 4 0v6"/><path d="M13 9.5a2 2 0 0 1 4 0V13a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 4 15.5L3 13a2 2 0 0 1 3.5-1.5L9 14"/>',
+pct:'<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',live:'<circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/>',
+grip:'<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
+back:'<path d="M9 6l6 6-6 6"/>',mail:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 7l9 6 9-6"/>',lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',more:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/>',img:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
+crown:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',pen:'<path d="M15 4l5 5L9 20H4v-5z"/><path d="M13 6l5 5"/>',
+sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',out:'<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',down:'<path d="M12 4v12M6 10l6 6 6-6M4 20h16"/>',
+copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4"/>',
+trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'};
+const ic=(k,s)=>`<svg viewBox="0 0 24 24" aria-hidden="true"${s?` style="width:${s}px;height:${s}px"`:''}>${I[k]}</svg>`;
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s);const app=$('#app');
+const fmt=n=>Number(n||0).toLocaleString('en-US');
+const ROLES={manager:{n:'المدير العام',d:'كل شيء، ومنها إضافة المشرفين وتحديد أدوارهم',i:'crown',c:'#E3A008'},
+ editor:{n:'محرر الإعلانات',d:'ينشئ ويعدّل الإعلانات، والنشر يحتاج موافقة المدير',i:'pen',c:'#1A5FE8'},
+ analyst:{n:'محلل الإحصائيات',d:'يشاهد الإحصائيات ويصدّرها فقط',i:'chart',c:'#0E9F6E'},
+ custom:{n:'مخصص',d:'تختار صلاحياته بنفسك',i:'sliders',c:'#8B5CF6'}};
+const PERMS=[['view','عرض الإعلانات'],['edit','إنشاء وتعديل'],['publish','نشر وإيقاف'],['delete','حذف'],['stats','الإحصائيات']];
+const ROLE_PERMS={manager:['view','edit','publish','delete','stats','members'],editor:['view','edit','stats'],analyst:['stats']};
+const STATUS={live:['نشط','c-live'],pending:['بانتظار الموافقة','c-pending'],draft:['مسودة','c-draft'],paused:['متوقف','c-paused']};
+const DAYS=['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
+const ri=(r,s=44)=>{const R=ROLES[r]||ROLES.custom;return `<span class="ri" style="width:${s}px;height:${s}px;background:${R.c}22;color:${R.c};border:1px solid ${R.c}55">${ic(R.i,s*.45)}</span>`};
+
+let me=null,ads=[],daily=[],route='home',param=null,filter='all',range=7,members=[],audit=[];
+const can=p=>!!me&&me.perms.includes(p);
+function toast(t){const m=$('#toast');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3200)}
+function err(e){const m=String(e&&e.message||e);toast(({'invalid invitation':'الرمز غير صحيح أو انتهت صلاحيته','not allowed':'ليست لديك صلاحية لهذا','Invalid login credentials':'البريد أو كلمة المرور غير صحيحة','already a member':'هذا البريد مشرف بالفعل','live or paused ads need a manager':'الإعلان المنشور يعدّله المدير فقط'})[m]||('تعذّر: '+m))}
+function imageUrl(p){return p?`${SUPABASE_URL}/storage/v1/object/public/ads/${encodeURIComponent(p)}`:''}
+function theme(t){if(t)try{localStorage.setItem('kv-theme',t)}catch(_){};let v='dark';try{v=localStorage.getItem('kv-theme')||'dark'}catch(_){};document.documentElement.dataset.theme=v}
+theme();
+
+function liveNow(a){const n=Date.now();return a.status==='live'&&(!a.starts_at||Date.parse(a.starts_at)<=n)&&(!a.ends_at||Date.parse(a.ends_at)>n)}
+function statusOf(a){if(a.status==='live'&&a.starts_at&&Date.parse(a.starts_at)>Date.now())return['مجدول','c-sched'];if(a.status==='live'&&a.ends_at&&Date.parse(a.ends_at)<=Date.now())return['منتهي','c-off'];return STATUS[a.status]||STATUS.draft}
+function dayKey(d){return d.toLocaleDateString('en-CA',{timeZone:'Asia/Riyadh'})}
+function totals(days,adId){const keys=new Set();const now=new Date();for(let i=0;i<days;i++)keys.add(dayKey(new Date(now-i*864e5)));
+ let im=0,cl=0;daily.forEach(r=>{if(keys.has(r.day)&&(!adId||String(r.ad_id)===String(adId))){im+=+r.impressions;cl+=+r.clicks}});return{im,cl}}
+function series(days,kind){const out=[];const now=new Date();for(let i=days-1;i>=0;i--){const d=new Date(now-i*864e5);const k=dayKey(d);
+ out.push({label:days<=7?DAYS[new Date(k+'T12:00:00').getDay()]:k.slice(8),v:daily.filter(r=>r.day===k).reduce((s,r)=>s+(+r[kind]),0)})}return out}
+function bars(s){const m=Math.max(1,...s.map(x=>x.v));return `<div class="bars" role="img" aria-label="${esc(s.map(x=>x.label+' '+x.v).join('، '))}">${s.map(x=>`<span><i style="height:${Math.max(4,x.v/m*88)}px"></i>${esc(x.label)}</span>`).join('')}</div>`}
+function delta(a,b){if(!b)return a?'<span class="d up num" dir="ltr">جديد</span>':'<span class="d num"> </span>';const p=(a-b)/b*100;return `<span class="d ${p>=0?'up':'down'} num" dir="ltr">${p>=0?'+':''}${p.toFixed(0)}%</span>`}
+function kpi(icon,label,value,d=''){return `<div class="kpi"><span class="l"><i>${ic(icon)}</i>${label}</span><span class="v num">${value}</span>${d}</div>`}
+function topBar(title,sub,action=''){return `<div class="top"><span class="t"><h1>${title}</h1>${sub?`<span class="sub">${sub}</span>`:''}</span>${action}</div>`}
+function backbar(title,extra=''){return `<div class="top" style="justify-content:flex-start"><button class="icon" data-go="${route==='invite'?'members':'ads'}" aria-label="رجوع">${ic('back',18)}</button><h1 style="flex:1;font-size:22px">${title}</h1>${extra}</div>`}
+
+// ---------- data ----------
+async function loadAds(){if(!(can('view')||can('stats')))return ads=[];const{data,error}=await sb.from('ads').select('*').order('sort_order').order('created_at');if(error)throw error;ads=data||[]}
+async function loadStats(days=30){if(!can('stats'))return daily=[];const{data,error}=await sb.rpc('panel_daily',{p_days:days});if(error)throw error;daily=(data||[]).map(r=>({...r,day:String(r.day)}))}
+async function loadMembers(){if(!can('members'))return;const[m,a]=await Promise.all([sb.from('panel_members').select('email,name,role,perms,is_owner,active,user_id,last_seen,invite_expires').order('created_at'),sb.from('panel_audit').select('*').order('at',{ascending:false}).limit(20)]);if(m.error)throw m.error;members=m.data||[];audit=a.data||[]}
+
+// ---------- auth ----------
+async function boot(){
+ const{data:{session}}=await sb.auth.getSession();
+ if(!session){me=null;return show('login')}
+ const{data,error}=await sb.rpc('panel_me');
+ if(error){err(error);return show('login')}
+ if(!data){me=null;return show('join')}
+ me=data;await refresh();show(can('view')||can('stats')?(can('view')?'home':'stats'):'members')
+}
+async function refresh(){try{await Promise.all([loadAds(),loadStats(30),loadMembers()])}catch(e){err(e)}}
+
+function loginView(){return `<div style="height:40px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:12px"><span class="logo" aria-hidden="true">K</span><h1>لوحة إدارة Keyvo</h1><span class="muted center">إدارة العروض داخل التطبيق ومتابعة أدائها</span></div>
+<form class="card" id="loginForm" style="padding:18px;gap:14px">
+<label class="f">البريد الإلكتروني<span class="in">${ic('mail',18)}<input id="email" type="email" autocomplete="username" dir="ltr" required></span></label>
+<label class="f">كلمة المرور<span class="in">${ic('lock',18)}<input id="password" type="password" autocomplete="current-password" dir="ltr" required minlength="8"></span></label>
+<button class="btn primary" type="submit">دخول</button>
+<div class="row" style="justify-content:space-between"><button type="button" class="link" data-go="activate">عندك رمز دعوة؟ فعّل حسابك</button><button type="button" class="link" id="forgot">نسيت كلمة المرور؟</button></div></form>
+<div class="sub" style="display:flex;gap:10px;align-items:flex-start;padding:0 6px">${ic('shield',18)}<span>لا يوجد تسجيل مفتوح. المدير العام وحده يضيف المشرفين ويرسل لهم رمز الدعوة.</span></div>`}
+function activateView(){return `<div style="height:24px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:10px"><span class="logo" aria-hidden="true">K</span><h1>تفعيل الدعوة</h1><span class="muted center">اكتب بريدك الذي دُعيت به، واختر كلمة مرور، ثم رمز الدعوة الذي وصلك</span></div>
+<form class="card" id="actForm" style="padding:18px;gap:14px">
+<label class="f">البريد الإلكتروني<span class="in">${ic('mail',18)}<input id="aemail" type="email" autocomplete="username" dir="ltr" required></span></label>
+<label class="f">كلمة مرور جديدة (8 أحرف على الأقل)<span class="in">${ic('lock',18)}<input id="apass" type="password" autocomplete="new-password" dir="ltr" required minlength="8"></span></label>
+<label class="f">رمز الدعوة<span class="in">${ic('key',18)}<input id="acode" autocomplete="one-time-code" dir="ltr" required maxlength="12" style="letter-spacing:3px;text-transform:uppercase" class="num"></span></label>
+<button class="btn primary" type="submit">تفعيل والدخول</button><button type="button" class="link" data-go="login">لديك حساب مفعّل؟ ادخل</button></form>`}
+function joinView(){return `<div style="height:40px"></div>${topBar('حسابك غير مرتبط','أدخل رمز الدعوة الذي أرسله لك المدير')}
+<form class="card" id="joinForm"><label class="f">رمز الدعوة<span class="in">${ic('key',18)}<input id="jcode" dir="ltr" required maxlength="12" class="num" style="letter-spacing:3px;text-transform:uppercase"></span></label>
+<button class="btn primary" type="submit">ربط الحساب</button><button type="button" class="btn" id="logout">${ic('out',18)}خروج</button></form>`}
+
+// ---------- home ----------
+function homeView(){
+ const live=ads.filter(liveNow).length,pending=ads.filter(a=>a.status==='pending');
+ const t=totals(1),y={im:0,cl:0};const yk=dayKey(new Date(Date.now()-864e5));daily.forEach(r=>{if(r.day===yk){y.im+=+r.impressions;y.cl+=+r.clicks}});
+ const ctr=t.im?t.cl/t.im*100:0,yctr=y.im?y.cl/y.im*100:0;
+ const best=ads.map(a=>({a,...totals(7,a.id)})).filter(x=>x.im).sort((p,q)=>q.cl/q.im-p.cl/p.im).slice(0,3);
+ const hour=+new Date().toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'Asia/Riyadh'});
+ return `${topBar(hour<12?'صباح الخير':'مساء الخير',me.name?esc(me.name)+' · '+ROLES[me.role]?.n:ROLES[me.role]?.n,`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`)}
+ ${can('publish')&&pending.length?`<div class="notice"><span style="color:var(--warn)">${ic('bell')}</span><span style="flex:1;display:flex;flex-direction:column"><b>${pending.length===1?'إعلان بانتظار موافقتك':pending.length+' إعلانات بانتظار موافقتك'}</b><span class="muted ellipsis">«${esc(pending[0].title)}»</span></span><button class="btn warn" data-edit="${esc(pending[0].id)}">مراجعة</button></div>`:''}
+ ${can('stats')?`<div class="kpis">${kpi('live','إعلانات نشطة',live)}${kpi('eye','ظهور اليوم',fmt(t.im),delta(t.im,y.im))}${kpi('tap','ضغطات اليوم',fmt(t.cl),delta(t.cl,y.cl))}${kpi('pct','نسبة الضغط',ctr.toFixed(1)+'%',delta(ctr,yctr))}</div>
+ <div class="card"><div class="top"><h2>الظهور — آخر 7 أيام</h2><span class="sub">كل الإعلانات</span></div>${bars(series(7,'impressions'))}</div>
+ <div class="card"><h2>الأفضل أداءً</h2>${best.length?best.map(x=>`<div style="display:flex;align-items:center;gap:12px"><span class="thumb" style="width:44px;height:44px;border-radius:12px;background-image:url(&quot;${esc(imageUrl(x.a.image_path))}&quot;)"></span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><b class="ellipsis">${esc(x.a.title)}</b><span class="sub num">${fmt(x.im)} ظهور · ${fmt(x.cl)} ضغطة</span></span><b class="num" style="color:var(--ok)">${(x.cl/x.im*100).toFixed(1)}%</b></div>`).join(''):'<span class="muted">لا توجد بيانات بعد. تظهر هنا بعد أول ظهور للإعلانات في التطبيق.</span>'}</div>`
+ :`<div class="kpis">${kpi('live','إعلانات نشطة',live)}${kpi('bell','بانتظار الموافقة',pending.length)}</div>`}`}
+
+// ---------- ads ----------
+function adsView(){
+ const groups={all:ads,live:ads.filter(a=>a.status==='live'),pending:ads.filter(a=>a.status==='pending'),draft:ads.filter(a=>a.status==='draft'),paused:ads.filter(a=>a.status==='paused')};
+ const names={all:'الكل',live:'نشط',pending:'بانتظار الموافقة',draft:'مسودة',paused:'متوقف'};
+ const list=groups[filter]||ads;const reorder=can('publish')&&filter==='all'&&ads.length>1;
+ return `${topBar('الإعلانات',reorder?'الترتيب هنا = ترتيب الظهور في التطبيق · الأرقام لآخر 30 يوماً':'الأرقام لآخر 30 يوماً',can('edit')?`<button class="fab" data-edit="new" aria-label="إعلان جديد">${ic('plus',24)}</button>`:'')}
+ <div class="filters" role="group" aria-label="تصفية">${Object.keys(names).filter(k=>k==='all'||groups[k].length).map(k=>`<button data-filter="${k}" aria-pressed="${filter===k}">${names[k]} <span class="num">${groups[k].length}</span></button>`).join('')}</div>
+ <div id="list" style="display:flex;flex-direction:column;gap:12px">${list.length?list.map(a=>adCard(a,reorder)).join(''):`<div class="card muted center">${ads.length?'لا شيء هنا':'لا توجد إعلانات بعد'}${can('edit')&&!ads.length?`<button class="btn primary" data-edit="new">${ic('plus',18)}أضف أول إعلان</button>`:''}</div>`}</div>
+ ${reorder?`<span class="sub center">اسحب ⋮⋮ لتغيير الترتيب</span>`:''}`}
+function adCard(a,reorder){const[s,c]=statusOf(a);const t=totals(30,a.id);const on=a.status==='live';
+ const sched=a.status==='live'&&a.starts_at&&Date.parse(a.starts_at)>Date.now()?'يبدأ '+new Date(a.starts_at).toLocaleString('ar-SA-u-nu-latn',{dateStyle:'medium',timeStyle:'short'}):'';
+ return `<div class="ad" data-id="${esc(a.id)}" data-edit="${esc(a.id)}">${reorder?`<button class="grip" aria-label="اسحب لترتيب «${esc(a.title)}»" data-grip>${ic('grip',18)}</button>`:''}
+ <span class="thumb" style="background-image:url(&quot;${esc(imageUrl(a.image_path))}&quot;)"></span>
+ <span class="b"><span class="n"><b>${esc(a.title)}</b><span class="chip ${c}">${s}</span></span><span class="muted ellipsis">${esc(a.description)}</span><span class="sub">${sched||(can('stats')?`<span class="num">${fmt(t.im)}</span> ظهور · <span class="num">${fmt(t.cl)}</span> ضغطة`:'')}</span></span>
+ ${can('publish')&&(a.status==='live'||a.status==='paused')?`<button class="tg" role="switch" aria-checked="${on}" aria-label="${on?'إيقاف':'تشغيل'} «${esc(a.title)}»" data-toggle="${esc(a.id)}"></button>`:''}</div>`}
+
+function wireDrag(){const list=$('#list');if(!list)return;let drag=null,moved=false;
+ list.querySelectorAll('[data-grip]').forEach(g=>{g.addEventListener('click',e=>e.stopPropagation());g.addEventListener('pointerdown',e=>{e.preventDefault();drag=g.closest('.ad');drag.classList.add('drag');g.setPointerCapture(e.pointerId);moved=false});
+ g.addEventListener('pointermove',e=>{if(!drag)return;const over=[...list.children].find(el=>{const r=el.getBoundingClientRect();return el!==drag&&e.clientY>r.top&&e.clientY<r.bottom});
+  if(over){const r=over.getBoundingClientRect();list.insertBefore(drag,e.clientY<r.top+r.height/2?over:over.nextSibling);moved=true}});
+ const end=async()=>{if(!drag)return;drag.classList.remove('drag');drag=null;if(!moved)return;const ids=[...list.children].map(el=>el.dataset.id);
+  const changes=ids.map((id,i)=>({id,i})).filter(({id,i})=>{const a=ads.find(x=>String(x.id)===id);return a&&a.sort_order!==i});
+  try{for(const c of changes){const{error}=await sb.from('ads').update({sort_order:c.i}).eq('id',c.id);if(error)throw error}toast('تم حفظ الترتيب');await loadAds()}catch(e){err(e);await loadAds();render()}};
+ g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end)});
+ // Keyboard: arrows move the focused item.
+ list.querySelectorAll('[data-grip]').forEach(g=>g.addEventListener('keydown',async e=>{if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;e.preventDefault();const el=g.closest('.ad');const sib=e.key==='ArrowUp'?el.previousElementSibling:el.nextElementSibling;if(!sib)return;
+  list.insertBefore(el,e.key==='ArrowUp'?sib:sib.nextSibling);g.focus();const ids=[...list.children].map(x=>x.dataset.id);for(const[i,id]of ids.entries()){const a=ads.find(x=>String(x.id)===id);if(a&&a.sort_order!==i){const{error}=await sb.from('ads').update({sort_order:i}).eq('id',id);if(error)return err(error)}}await loadAds()}))}
+
+// ---------- editor ----------
+let draft=null,file=null,previewLight=false;
+function editorView(){
+ const a=draft;const isNew=!a.id;const publisher=can('publish');const locked=!publisher&&!['draft','pending'].includes(a.status);
+ const [s,c]=isNew?['جديد','c-draft']:statusOf(a);
+ const img=file?URL.createObjectURL(file):imageUrl(a.image_path);
+ const v=(k,d='')=>esc(a[k]??d);
+ const local=x=>{if(!x)return'';const d=new Date(x);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`};
+ return `${backbar(isNew?'إعلان جديد':'تعديل الإعلان',`<span class="chip ${c}">${s}</span>`)}
+ ${locked?`<div class="notice"><span style="color:var(--warn)">${ic('lock')}</span><span class="muted" style="flex:1">هذا الإعلان منشور. التعديل عليه للمدير فقط.</span></div>`:''}
+ <div class="preview"><div class="top"><span class="muted" style="font-weight:600">معاينة داخل Keyvo</span><div class="seg" style="padding:2px;width:130px"><button type="button" data-pv="0" aria-pressed="${!previewLight}">داكن</button><button type="button" data-pv="1" aria-pressed="${previewLight}">فاتح</button></div></div>
+ <div class="phone ${previewLight?'light':''}"><b style="font-size:12px">الإعدادات</b><div class="banner" id="pvBanner" style="${img?`background-image:url(&quot;${esc(img)}&quot;)`:''}"><span style="font-size:9px;opacity:.8">إعلان</span><b id="pvT" style="font-size:15px">${v('title','عنوان الإعلان')}</b><span id="pvD" style="font-size:10.5px;opacity:.92">${v('description')}</span><span class="cta" id="pvC">${v('cta','تحميل')}</span></div><div class="ph"></div><div class="ph"></div></div></div>
+ <form id="adForm" class="card"${locked?' inert':''}>
+ <label class="f">العنوان<span class="in"><input name="title" maxlength="80" required value="${v('title')}"></span></label>
+ <label class="f">الوصف<span class="in area"><textarea name="description" maxlength="240" rows="2">${v('description')}</textarea></span></label>
+ <div class="row"><label class="f">نص الزر<span class="in"><input name="cta" maxlength="40" value="${v('cta','تحميل')}"></span></label><label class="f">مدة العرض (ثوانٍ)<span class="in"><input name="interval_seconds" type="number" min="5" max="60" value="${v('interval_seconds',6)}" class="num"></span></label></div>
+ <label class="f">رابط Google Play<span class="in"><input name="destination" dir="ltr" required placeholder="https://play.google.com/store/apps/details?id=…" value="${v('destination')}"></span></label>
+ <span class="f" style="font-size:13px;font-weight:600;color:var(--sub)">الصورة (PNG أو JPG أو WebP، حتى 2MB، يُفضّل 1200×630)</span>
+ <label class="upload"><span class="thumb" style="width:50px;height:50px;border-radius:12px;${img?`background-image:url(&quot;${esc(img)}&quot;)`:''}">${img?'':ic('img')}</span><span style="flex:1;display:flex;flex-direction:column;font-size:13px;min-width:0"><b class="ellipsis" style="color:var(--ink)">${file?esc(file.name):a.image_path?'الصورة الحالية':'اختر صورة'}</b><span class="num" dir="ltr">${file?(file.size/1024).toFixed(0)+' KB':''}</span></span><span class="link">${img?'تغيير':'اختيار'}</span><input type="file" id="imgIn" accept="image/png,image/jpeg,image/webp" class="hidden"></label>
+ </form>
+ <div class="card"${locked?' inert':''}><h2 style="display:flex;align-items:center;gap:8px">${ic('cal',18)}الجدولة</h2><div class="row"><label class="f">يبدأ<span class="in"><input form="adForm" name="starts_at" type="datetime-local" value="${local(a.starts_at)}"></span></label><label class="f">ينتهي<span class="in"><input form="adForm" name="ends_at" type="datetime-local" value="${local(a.ends_at)}"></span></label></div><span class="sub">اتركه فارغاً ليبدأ فور النشر ويستمر حتى توقفه.</span></div>
+ ${locked?'':actions(a,publisher)}
+ ${!isNew&&can('delete')?`<button class="btn danger" id="delAd">${ic('trash',18)}حذف الإعلان</button>`:''}`}
+function actions(a,publisher){const b=(st,l,p)=>`<button class="btn ${p?'primary':''}" data-save="${st}"${p?' style="flex:2"':''}>${l}</button>`;
+ if(!publisher)return `<div class="row">${b('pending','إرسال للموافقة',1)}${b('draft','مسودة')}</div>`;
+ const m={pending:[['live','موافقة ونشر'],['draft','إرجاع كمسودة']],live:[['live','حفظ'],['paused','حفظ وإيقاف']],paused:[['live','حفظ ونشر'],['paused','حفظ متوقفاً']]}[a.status]||[['live','حفظ ونشر'],['draft','مسودة']];
+ return `<div class="row">${b(m[0][0],m[0][1],1)}${b(m[1][0],m[1][1])}</div>`}
+function wireEditor(){const f=$('#adForm');if(!f)return;
+ const sync=()=>{$('#pvT').textContent=f.title.value||'عنوان الإعلان';$('#pvD').textContent=f.description.value;$('#pvC').textContent=f.cta.value||'تحميل'};
+ f.addEventListener('input',sync);
+ $('#imgIn').addEventListener('change',e=>{const x=e.target.files[0];if(!x)return;if(x.size>2*1024*1024)return toast('الصورة أكبر من 2 ميجابايت');if(!['image/png','image/jpeg','image/webp'].includes(x.type))return toast('نوع الصورة غير مدعوم');
+  ['title','description','cta','interval_seconds','destination','starts_at','ends_at'].forEach(k=>{const el=document.querySelector(`[name=${k}]`);if(el)draft[k]=el.type==='datetime-local'?(el.value?new Date(el.value).toISOString():null):el.value});file=x;render()});
+ document.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{previewLight=b.dataset.pv==='1';$('.phone').classList.toggle('light',previewLight);document.querySelectorAll('[data-pv]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+ document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveAd(b.dataset.save,b));
+ const del=$('#delAd');if(del)del.onclick=async()=>{if(!confirm(`حذف «${draft.title}» نهائياً؟`))return;const{error}=await sb.from('ads').delete().eq('id',draft.id);if(error)return err(error);if(draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);toast('حُذف');await loadAds();go('ads')}}
+async function saveAd(status,btn){const f=$('#adForm');const val=k=>(f.elements[k]?.value??document.querySelector(`[name=${k}]`)?.value??'').trim();
+ const row={title:val('title'),description:val('description'),cta:val('cta')||'تحميل',destination:val('destination'),interval_seconds:Math.min(60,Math.max(5,parseInt(val('interval_seconds')||'6'))),
+  starts_at:val('starts_at')?new Date(val('starts_at')).toISOString():null,ends_at:val('ends_at')?new Date(val('ends_at')).toISOString():null,status};
+ if(!row.title)return toast('اكتب العنوان');
+ if(!/^(https:\/\/play\.google\.com\/store\/apps\/details\?id=|market:\/\/details\?id=)[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/.test(row.destination))return toast('رابط Google Play غير صحيح — احذف أي شيء بعد اسم الحزمة');
+ if(row.starts_at&&row.ends_at&&row.ends_at<=row.starts_at)return toast('تاريخ الانتهاء قبل البداية');
+ if(!draft.id&&!file)return toast('اختر صورة');
+ btn.disabled=true;let uploaded=null;
+ try{if(file){const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[file.type];uploaded=`${crypto.randomUUID()}.${ext}`;
+   const{error}=await sb.storage.from('ads').upload(uploaded,file,{contentType:file.type,cacheControl:'3600'});if(error)throw error;row.image_path=uploaded}
+  if(!draft.id)row.sort_order=ads.length?Math.max(...ads.map(a=>a.sort_order||0))+1:0;
+  const{data,error}=draft.id?await sb.from('ads').update(row).eq('id',draft.id).select().single():await sb.from('ads').insert(row).select().single();
+  if(error)throw error;if(uploaded&&draft.image_path)await sb.storage.from('ads').remove([draft.image_path]);
+  toast(data.status==='live'?'نُشر ✓':data.status==='pending'?'أُرسل للمدير للموافقة':'حُفظ ✓');file=null;await loadAds();go('ads')}
+ catch(e){if(uploaded)await sb.storage.from('ads').remove([uploaded]);err(e)}finally{btn.disabled=false}}
+
+// ---------- stats ----------
+function statsView(){const t=totals(range),p={im:0,cl:0};const now=Date.now();const keys=new Set();for(let i=range;i<range*2;i++)keys.add(dayKey(new Date(now-i*864e5)));daily.forEach(r=>{if(keys.has(r.day)){p.im+=+r.impressions;p.cl+=+r.clicks}});
+ const rows=ads.map(a=>({a,...totals(range,a.id)})).filter(x=>x.im||x.cl||x.a.status==='live').sort((x,y)=>y.im-x.im);
+ return `${topBar('الإحصائيات','أرقام تقريبية لقياس التفاعل',`<span style="display:flex;gap:8px"><button class="icon" id="csv" aria-label="تصدير CSV">${ic('down',18)}</button>${can('view')?'':`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`}</span>`)}
+ <div class="seg" role="group">${[[1,'اليوم'],[7,'7 أيام'],[30,'30 يوم']].map(([d,l])=>`<button data-range="${d}" aria-pressed="${range===d}">${l}</button>`).join('')}</div>
+ <div class="kpis">${kpi('eye','الظهور',fmt(t.im),range<30?delta(t.im,p.im):'')}${kpi('tap','الضغطات',fmt(t.cl),range<30?delta(t.cl,p.cl):'')}</div>
+ <div class="card"><h2>الضغطات يومياً</h2>${bars(series(range===1?7:range,'clicks'))}</div>
+ <div class="card" style="padding:14px"><table><thead><tr><th>الإعلان</th><th>ظهور</th><th>ضغط</th><th>النسبة</th></tr></thead><tbody>${rows.length?rows.map(x=>`<tr><td><b>${esc(x.a.title)}</b></td><td class="num">${fmt(x.im)}</td><td class="num">${fmt(x.cl)}</td><td class="num" style="font-weight:700;color:${x.im&&x.cl/x.im>.025?'var(--ok)':'var(--sub)'}">${x.im?(x.cl/x.im*100).toFixed(1):'0.0'}%</td></tr>`).join(''):'<tr><td colspan="4" class="muted">لا توجد بيانات لهذه الفترة</td></tr>'}</tbody></table></div>
+ <div class="sub" style="display:flex;gap:10px;align-items:flex-start;padding:0 4px">${ic('shield',16)}<span>الظهور أو الضغط المكرر من نفس المصدر خلال دقيقة يُحسب مرة واحدة. لا معرّفات ولا مواقع. التنزيلات نفسها تتم في Google Play ولا تظهر هنا.</span></div>`}
+function exportCsv(){const lines=[['اليوم','الإعلان','الظهور','الضغطات']];const name=id=>(ads.find(a=>String(a.id)===String(id))||{}).title||id;
+ daily.slice().sort((a,b)=>a.day<b.day?-1:1).forEach(r=>lines.push([r.day,name(r.ad_id),r.impressions,r.clicks]));
+ const csv='﻿'+lines.map(l=>l.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`keyvo-stats-${dayKey(new Date())}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+// ---------- members ----------
+function ago(t){if(!t)return'لم يدخل بعد';const m=(Date.now()-Date.parse(t))/6e4;return m<5?'متصل الآن':m<60?`قبل ${Math.round(m)} دقيقة`:m<1440?`قبل ${Math.round(m/60)} ساعة`:`قبل ${Math.round(m/1440)} يوم`}
+const ACT={'member.invited':['دعا','var(--acc)'],'member.joined':['فعّل حسابه','var(--ok)'],'member.suspended':['أوقف','var(--off)'],'member.activated':['أعاد تفعيل','var(--ok)'],'member.changed':['غيّر دور','var(--acc)'],'member.removed':['حذف','var(--bad)'],'member.reinvited':['أعاد دعوة','var(--acc)'],
+ 'ad.live':['نشر','var(--ok)'],'ad.pending':['أرسل للموافقة','var(--warn)'],'ad.draft':['حفظ مسودة','var(--accInk)'],'ad.paused':['أوقف','var(--off)'],'ad.edited':['عدّل','var(--acc)'],'ad.deleted':['حذف','var(--bad)']};
+function membersView(){const count=r=>members.filter(m=>m.role===r).length;
+ return `${topBar('المشرفون','الأدوار تحدد ما يراه كل مشرف',`<span style="display:flex;gap:8px"><button class="pill" data-go="invite">${ic('plus',18)}إضافة مشرف</button>${can('view')||can('stats')?'':`<button class="icon" id="menuBtn" aria-label="القائمة">${ic('more',18)}</button>`}</span>`)}
+ <div class="roles">${['manager','editor','analyst'].map(r=>`<div>${ri(r,36)}<span>${ROLES[r].n}</span><b class="num">${count(r)}</b></div>`).join('')}</div>
+ <div class="card" style="padding:4px 14px;gap:0">${members.map(m=>{const pend=!m.user_id;const st=!m.active?['موقوف','c-off']:pend?['بانتظار التفعيل','c-pending']:['نشط','c-live'];
+  return `<div class="member">${ri(m.role)}<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:center;gap:8px"><b class="ellipsis">${esc(m.name||m.email.split('@')[0])}${m.user_id&&m.email===me.email?' (أنت)':''}</b><span class="chip ${st[1]}">${st[0]}</span></span><span class="muted">${ROLES[m.role].n}${m.is_owner?' · المالك':''}</span><span class="sub num ellipsis" dir="ltr" style="text-align:right">${esc(m.email)} · ${ago(m.last_seen)}</span></span>
+  ${m.is_owner||m.email===me.email?'':`<button class="icon" style="border:0;background:none" data-member="${esc(m.email)}" aria-label="خيارات ${esc(m.email)}">${ic('more')}</button>`}</div>`}).join('')}</div>
+ <div class="card"><h2>سجل التغييرات</h2>${audit.length?audit.map(l=>{const[a,c]=ACT[l.action]||[l.action,'var(--mute)'];return `<div class="log"><i style="background:${c}"></i><span style="flex:1;min-width:0" class="ellipsis">${esc(l.actor_name||'النظام')} ${a} «${esc(l.target||'')}»</span><span class="sub">${ago(l.at).replace('متصل الآن','الآن')}</span></div>`}).join(''):'<span class="muted">لا توجد تغييرات بعد</span>'}</div>`}
+let inv={role:'editor',perms:['view','edit','stats'],code:null,email:'',name:''};
+function inviteView(){if(inv.code)return `${backbar('الدعوة جاهزة')}<div class="card"><span class="muted">أرسل هذا الرمز إلى <b dir="ltr" class="num">${esc(inv.email)}</b> بطريقة خاصة (واتساب أو رسالة). صالح 7 أيام ولمرة واحدة.</span><div class="code" id="code">${esc(inv.code)}</div>
+ <div class="row"><button class="btn primary" id="shareCode">${ic('share',18)}مشاركة</button><button class="btn" id="copyCode">${ic('copy',18)}نسخ</button></div><span class="sub">يفتح اللوحة ويضغط «عندك رمز دعوة؟» ثم يكتب بريده وكلمة مرور يختارها والرمز.</span></div><button class="btn" data-go="members">تم</button>`;
+ const perms=inv.role==='custom'?inv.perms:ROLE_PERMS[inv.role];
+ return `${backbar('إضافة مشرف')}<form id="invForm" class="card"><label class="f">البريد الإلكتروني<span class="in">${ic('mail',18)}<input name="email" type="email" dir="ltr" required placeholder="name@example.com" value="${esc(inv.email)}"></span></label><label class="f">الاسم (اختياري)<span class="in"><input name="name" maxlength="60" value="${esc(inv.name)}"></span></label><span class="sub">يصله رمز دعوة منك ليفعّل حسابه بنفسه.</span></form>
+ <h2 style="padding:0 4px">الدور</h2><div role="radiogroup" aria-label="الدور" style="display:flex;flex-direction:column;gap:8px">${Object.entries(ROLES).map(([k,R])=>`<button type="button" class="opt" role="radio" aria-checked="${inv.role===k}" data-role="${k}">${ri(k,40)}<span style="flex:1;display:flex;flex-direction:column;gap:2px"><b>${R.n}</b><span class="muted">${R.d}</span></span><span class="dot"></span></button>`).join('')}</div>
+ <div class="card" style="gap:4px"><b>صلاحيات «${ROLES[inv.role].n}»</b><span class="sub">غيّر أي مفتاح ويتحول الدور إلى «مخصص».</span>${PERMS.map(([p,l])=>`<div class="perm"><span style="color:${perms.includes(p)?'var(--ink)':'var(--mute)'}">${l}</span><button class="tg" role="switch" aria-label="${l}" aria-checked="${perms.includes(p)}" data-perm="${p}"></button></div>`).join('')}
+ <div class="perm"><span style="color:${inv.role==='manager'?'var(--ink)':'var(--mute)'}">إدارة المشرفين</span><button class="tg" role="switch" aria-label="إدارة المشرفين" aria-checked="${inv.role==='manager'}" disabled></button></div><span class="sub">إدارة المشرفين للمدير العام فقط.</span></div>
+ <button class="btn primary" id="sendInvite">${ic('mail',18)}إنشاء الدعوة</button>`}
+function keepInv(){const f=$('#invForm');if(f){inv.email=f.email.value;inv.name=f.name.value}}
+function memberMenu(email){const m=members.find(x=>x.email===email);if(!m)return;
+ const opts=[...Object.keys(ROLES).filter(r=>r!==m.role&&r!=='custom').map(r=>[`role:${r}`,`تغيير الدور إلى «${ROLES[r].n}»`]),[m.active?'off':'on',m.active?'إيقاف الحساب':'إعادة التفعيل'],['re','رمز دعوة جديد'],['rm','حذف المشرف']];
+ const el=document.createElement('div');el.className='menu';el.innerHTML=`<div class="sheet" role="dialog" aria-label="خيارات"><b style="padding:0 4px 6px">${esc(m.name||m.email)}</b>${opts.map(([k,l])=>`<button class="btn ${k==='rm'?'danger':''}" data-k="${k}">${esc(l)}</button>`).join('')}<button class="btn" data-k="x">إلغاء</button></div>`;
+ document.body.appendChild(el);el.onclick=async e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(e.target===el||k==='x')return el.remove();if(!k)return;el.remove();
+  try{if(k.startsWith('role:')){const{error}=await sb.rpc('panel_update_member',{p_email:email,p_role:k.slice(5)});if(error)throw error;toast('تم تغيير الدور')}
+   else if(k==='off'||k==='on'){const{error}=await sb.rpc('panel_update_member',{p_email:email,p_active:k==='on'});if(error)throw error;toast(k==='on'?'أُعيد التفعيل':'أوقف الحساب')}
+   else if(k==='re'){const{data,error}=await sb.rpc('panel_reinvite',{p_email:email});if(error)throw error;inv={...inv,code:data,email};await loadMembers();return go('invite')}
+   else if(k==='rm'){if(!confirm(`حذف ${email} من المشرفين؟`))return;const{error}=await sb.rpc('panel_remove_member',{p_email:email});if(error)throw error;toast('حُذف')}
+   await loadMembers();render()}catch(x){err(x)}}}
+
+// ---------- shell ----------
+function navView(){const items=[['home','الرئيسية','home',can('view')],['ads','الإعلانات','ads',can('view')],['stats','الإحصائيات','chart',can('stats')],['members','المشرفون','users',can('members')]].filter(x=>x[3]);
+ return items.length>1?items.map(([r,l,i])=>`<button data-go="${r}" ${route===r||(route==='edit'&&r==='ads')||(route==='invite'&&r==='members')?'aria-current="page"':''}><span>${ic(i)}</span>${l}</button>`).join(''):''}
+function show(r,p){route=r;param=p;render();scrollTo(0,0)}
+function go(r,p){if(r==='edit'){file=null;draft=p==='new'?{status:'draft',cta:'تحميل',interval_seconds:6}:{...ads.find(a=>String(a.id)===String(p))};if(!draft)return}
+ if(r==='invite'&&route!=='invite')inv={role:'editor',perms:['view','edit','stats'],code:null,email:'',name:''};show(r,p)}
+function render(){const views={login:loginView,activate:activateView,join:joinView,home:homeView,ads:adsView,edit:editorView,stats:statsView,members:membersView,invite:inviteView};
+ app.innerHTML=(views[route]||homeView)();const nav=$('#nav');const n=me&&!['login','activate','join'].includes(route)?navView():'';nav.innerHTML=n;nav.classList.toggle('hidden',!n);
+ if(route==='ads')wireDrag();if(route==='edit')wireEditor();wireForms()}
+function wireForms(){
+ const lf=$('#loginForm');if(lf)lf.onsubmit=async e=>{e.preventDefault();const b=lf.querySelector('button[type=submit]');b.disabled=true;const{error}=await sb.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});b.disabled=false;if(error)return err(error);boot()};
+ const fg=$('#forgot');if(fg)fg.onclick=async()=>{const e=$('#email').value.trim();if(!e)return toast('اكتب بريدك أولاً');const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.href.split('#')[0]});toast(error?'تعذّر الإرسال. اطلب من المدير رمز دعوة جديد.':'إن كان البريد مسجلاً فستصله رسالة لإعادة التعيين.')};
+ const af=$('#actForm');if(af)af.onsubmit=async e=>{e.preventDefault();const b=af.querySelector('button[type=submit]');b.disabled=true;
+  try{const email=$('#aemail').value.trim(),password=$('#apass').value,code=$('#acode').value.trim().toUpperCase();
+   let r=await sb.auth.signUp({email,password});if(r.error&&/already|registered/i.test(r.error.message))r=await sb.auth.signInWithPassword({email,password});if(r.error)throw r.error;
+   if(!r.data.session){toast('أكّد بريدك من الرسالة التي وصلتك، ثم ادخل واكتب الرمز.');return show('login')}
+   const{error}=await sb.rpc('panel_join',{code});if(error)throw error;toast('تم التفعيل ✓');boot()}catch(x){err(x)}finally{b.disabled=false}};
+ const jf=$('#joinForm');if(jf)jf.onsubmit=async e=>{e.preventDefault();const{error}=await sb.rpc('panel_join',{code:$('#jcode').value.trim().toUpperCase()});if(error)return err(error);boot()};
+ const lo=$('#logout');if(lo)lo.onclick=async()=>{await sb.auth.signOut();me=null;show('login')};
+ const mb=$('#menuBtn');if(mb)mb.onclick=()=>{const el=document.createElement('div');el.className='menu';const light=document.documentElement.dataset.theme==='light';
+  el.innerHTML=`<div class="sheet" role="dialog" aria-label="القائمة"><b style="padding:0 4px 6px" dir="ltr" class="num">${esc(me.email)}</b><button class="btn" data-k="theme">${ic('moon',18)}${light?'الوضع الداكن':'الوضع الفاتح'}</button><button class="btn" data-k="pass">${ic('lock',18)}تغيير كلمة المرور</button><button class="btn" data-k="out">${ic('out',18)}خروج</button><button class="btn" data-k="x">إلغاء</button></div>`;
+  document.body.appendChild(el);el.onclick=async e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(e.target!==el&&!k)return;el.remove();
+   if(k==='theme'){theme(light?'dark':'light')}else if(k==='out'){await sb.auth.signOut();me=null;show('login')}
+   else if(k==='pass'){const p=prompt('كلمة المرور الجديدة (8 أحرف على الأقل)');if(!p)return;if(p.length<8)return toast('قصيرة جداً');const{error}=await sb.auth.updateUser({password:p});toast(error?'تعذّر: '+error.message:'تم تغيير كلمة المرور')}}};
+ const csv=$('#csv');if(csv)csv.onclick=exportCsv;
+ const si=$('#sendInvite');if(si)si.onclick=async()=>{keepInv();const f=$('#invForm');if(!f.reportValidity())return;si.disabled=true;
+  const perms=inv.role==='custom'?inv.perms:[];const{data,error}=await sb.rpc('panel_invite',{p_email:inv.email.trim(),p_name:inv.name.trim(),p_role:inv.role,p_perms:perms});si.disabled=false;if(error)return err(error);inv.code=data;await loadMembers();render()};
+ const sc=$('#shareCode');if(sc){const msg=`دعوة للانضمام إلى لوحة إدارة Keyvo\nالرابط: ${location.href.split('#')[0]}\nالبريد: ${inv.email}\nرمز الدعوة: ${inv.code}`;
+  sc.onclick=async()=>{if(navigator.share)try{await navigator.share({text:msg})}catch(_){}else{await navigator.clipboard.writeText(msg);toast('نُسخت الرسالة')}};
+  $('#copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(inv.code);toast('نُسخ الرمز')}catch(_){toast(inv.code)}}}
+}
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-go],[data-edit],[data-filter],[data-toggle],[data-range],[data-role],[data-perm],[data-member]');if(!t)return;
+ if(t.dataset.toggle){e.stopPropagation();const a=ads.find(x=>String(x.id)===t.dataset.toggle);const next=a.status==='live'?'paused':'live';t.disabled=true;
+  const{error}=await sb.from('ads').update({status:next}).eq('id',a.id);if(error){err(error);t.disabled=false;return}toast(next==='live'?'شُغّل':'أوقف');await loadAds();return render()}
+ if(t.dataset.go)return go(t.dataset.go);if(t.dataset.edit)return go('edit',t.dataset.edit);
+ if(t.dataset.filter){filter=t.dataset.filter;return render()}if(t.dataset.range){range=+t.dataset.range;return render()}
+ if(t.dataset.role){keepInv();inv.role=t.dataset.role;if(inv.role==='custom'&&!inv.perms.length)inv.perms=['view'];return render()}
+ if(t.dataset.perm){keepInv();const cur=inv.role==='custom'?inv.perms:ROLE_PERMS[inv.role].filter(p=>p!=='members');const p=t.dataset.perm;inv.perms=cur.includes(p)?cur.filter(x=>x!==p):[...cur,p];inv.role='custom';return render()}
+ if(t.dataset.member)return memberMenu(t.dataset.member)});
+sb.auth.onAuthStateChange((ev)=>{if(ev==='PASSWORD_RECOVERY'){setTimeout(async()=>{const p=prompt('اختر كلمة مرور جديدة (8 أحرف على الأقل)');if(p&&p.length>=8){const{error}=await sb.auth.updateUser({password:p});toast(error?'تعذّر: '+error.message:'تم ✓');boot()}},300)}});
+boot().catch(e=>{err(e);show('login')});
+</script>
+</body>
+</html>
