@@ -137,6 +137,7 @@ const DAYS=['أحد','إثنين','ثلاثاء','أربعاء','خميس','جم
 const ri=(r,s=44)=>{const R=ROLES[r]||ROLES.custom;return `<span class="ri" style="width:${s}px;height:${s}px;background:${R.c}22;color:${R.c};border:1px solid ${R.c}55">${ic(R.i,s*.45)}</span>`};
 
 let switches={ads:true,banners:true},switchesReady=false;
+let messages=[],msgUrls={},msgFilter='new';
 let me=null,ads=[],daily=[],banners=[],bdaily=[],statKind='ad',metric='clicks',itemKind='ad',itemRange=30,route='home',param=null,filter='all',range=7,members=[],audit=[];
 const can=p=>!!me&&me.perms.includes(p);
 function toast(t){const m=$('#toast');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3200)}
@@ -166,6 +167,8 @@ async function loadAds(){if(!(can('view')||can('stats')))return ads=[];const{dat
 async function loadStats(days=30){if(!can('stats'))return daily=bdaily=[];const[a,b]=await Promise.all([sb.rpc('panel_daily',{p_days:days}),sb.rpc('panel_banner_daily',{p_days:days})]);if(a.error)throw a.error;if(b.error)throw b.error;daily=(a.data||[]).map(r=>({...r,day:String(r.day)}));bdaily=(b.data||[]).map(r=>({...r,day:String(r.day)}))}
 async function loadSwitches(){const{data,error}=await sb.from('panel_switches').select('kind,enabled');switchesReady=!error;if(!error)(data||[]).forEach(r=>switches[r.kind]=r.enabled)}
 async function loadBanners(){if(!(can('view')||can('stats')))return banners=[];const{data,error}=await sb.from('banners').select('*').order('sort_order').order('created_at');if(error)throw error;banners=data||[]}
+async function loadMessages(){if(!can('view'))return messages=[];const{data,error}=await sb.from('support_messages').select('*').order('created_at',{ascending:false}).limit(150);if(error){messages=[];return}messages=data||[];
+ const paths=messages.flatMap(m=>m.images||[]);msgUrls={};if(paths.length){const{data:u}=await sb.storage.from('support').createSignedUrls(paths,3600);(u||[]).forEach(x=>{if(x.signedUrl)msgUrls[x.path]=x.signedUrl})}}
 async function loadMembers(){if(!can('members'))return;const[m,a]=await Promise.all([sb.from('panel_members').select('email,name,role,perms,is_owner,active,user_id,last_seen,invite_expires').order('created_at'),sb.from('panel_audit').select('*').order('at',{ascending:false}).limit(20)]);if(m.error)throw m.error;members=m.data||[];audit=a.data||[]}
 
 // ---------- auth ----------
@@ -177,7 +180,7 @@ async function boot(){
  if(!data){me=null;return show('join')}
  me=data;await refresh();show(can('view')||can('stats')?(can('view')?'home':'stats'):'members')
 }
-async function refresh(){try{await Promise.all([loadAds(),loadBanners(),loadStats(30),loadMembers(),loadSwitches().catch(()=>{})])}catch(e){err(e)}}
+async function refresh(){try{await Promise.all([loadAds(),loadBanners(),loadStats(30),loadMembers(),loadMessages().catch(()=>{}),loadSwitches().catch(()=>{})])}catch(e){err(e)}}
 
 function loginView(){return `<div style="height:40px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:12px"><span class="logo" aria-hidden="true">K</span><h1>لوحة إدارة Keyvo</h1><span class="muted center">إدارة العروض داخل التطبيق ومتابعة أدائها</span></div>
 <form class="card" id="loginForm" style="padding:18px;gap:14px">
@@ -420,17 +423,34 @@ function memberMenu(email){const m=members.find(x=>x.email===email);if(!m)return
    else if(k==='rm'){if(!confirm(`حذف ${email} من المشرفين؟`))return;const{error}=await sb.rpc('panel_remove_member',{p_email:email});if(error)throw error;toast('حُذف')}
    await loadMembers();render()}catch(x){err(x)}}}
 
+
+// ---------- «الرسائل» (owner, Nov 18 2026): «تواصل معنا» from the app ----------
+const MSG_KIND={problem:['مشكلة','var(--bad)','var(--badBg)'],suggestion:['اقتراح','var(--acc)','var(--accBg)'],question:['سؤال','var(--warn)','var(--warnBg)']};
+const MSG_STATUS={new:'جديدة',read:'تمت القراءة',replied:'تم الرد'};
+function messagesView(){const list=messages.filter(m=>msgFilter==='all'||m.status===msgFilter);
+ return `<div class="top"><h1>الرسائل</h1><span class="sub num">${fmt(messages.filter(m=>m.status==='new').length)} جديدة</span></div>
+ <div class="row" style="gap:8px;flex-wrap:wrap">${[['new','الجديدة'],['read','المقروءة'],['replied','تم الرد'],['all','الكل']].map(([k,l])=>`<button class="btn" style="width:auto;height:36px;font-size:13px;${msgFilter===k?'background:var(--acc);color:#fff':''}" data-mf="${k}">${l}</button>`).join('')}</div>
+ <div style="display:flex;flex-direction:column;gap:12px">${list.length?list.map(m=>{const k=MSG_KIND[m.kind]||MSG_KIND.question;const v=m.version||{};
+  return `<div class="card" style="gap:10px"><div class="row" style="justify-content:space-between;align-items:center"><span style="padding:3px 10px;border-radius:10px;font-size:12px;color:${k[1]};background:${k[2]}">${k[0]}</span><span class="sub num">${esc(new Date(m.created_at).toLocaleString('ar-SA'))}</span></div>
+  <div style="white-space:pre-wrap;line-height:1.7">${esc(m.body)}</div>
+  ${(m.images||[]).length?`<div class="row" style="gap:8px;flex-wrap:wrap">${m.images.map(p=>msgUrls[p]?`<a href="${esc(msgUrls[p])}" target="_blank" rel="noopener"><img src="${esc(msgUrls[p])}" alt="" style="width:88px;height:88px;object-fit:cover;border-radius:12px;border:1px solid var(--line)"></a>`:'').join('')}</div>`:''}
+  ${m.reply_email?`<a class="link" dir="ltr" href="mailto:${esc(m.reply_email)}">${esc(m.reply_email)}</a>`:'<span class="sub">بدون بريد للرد</span>'}
+  ${v.version_name?`<span class="sub num" dir="ltr">${esc(v.version_name)} · build ${esc(String(v.version_code||''))} · Android SDK ${esc(String(v.android_sdk||''))}</span>`:''}
+  <div class="row" style="gap:8px">${can('edit')?['read','replied'].filter(s=>s!==m.status).map(s=>`<button class="btn" style="width:auto;height:34px;font-size:13px" data-ms="${esc(m.id)}:${s}">${MSG_STATUS[s]}</button>`).join(''):''}<span class="sub" style="margin-inline-start:auto">${MSG_STATUS[m.status]||''}</span></div></div>`}).join(''):'<div class="card muted center">لا توجد رسائل هنا</div>'}</div>`}
+function wireMessages(){document.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{msgFilter=b.dataset.mf;render()});
+ document.querySelectorAll('[data-ms]').forEach(b=>b.onclick=async()=>{const[id,st]=b.dataset.ms.split(':');b.disabled=true;const{error}=await sb.from('support_messages').update({status:st}).eq('id',id);if(error)return err(error);const m=messages.find(x=>x.id===id);if(m)m.status=st;toast('تم');render()})}
+
 // ---------- shell ----------
-function navView(){const items=[['home','الرئيسية','home',can('view')],['ads','الإعلانات','ads',can('view')],['banners','البنرات','img',can('view')],['stats','الإحصائيات','chart',can('stats')],['members','المشرفون','users',can('members')]].filter(x=>x[3]);
+function navView(){const items=[['home','الرئيسية','home',can('view')],['ads','الإعلانات','ads',can('view')],['banners','البنرات','img',can('view')],['stats','الإحصائيات','chart',can('stats')],['messages','الرسائل'+(messages.some(m=>m.status==='new')?' •':''),'bell',can('view')],['members','المشرفون','users',can('members')]].filter(x=>x[3]);
  return items.length>1?items.map(([r,l,i])=>`<button data-go="${r}" ${route===r||(route==='edit'&&r==='ads')||(route==='bedit'&&r==='banners')||((route==='live')&&r==='home')||(route==='item'&&r==='stats')||(route==='invite'&&r==='members')?'aria-current="page"':''}><span>${ic(i)}</span>${l}</button>`).join(''):''}
 let prevRoute='';
 function show(r,p){if(r==='item'&&route!=='item')prevRoute=route==='live'?'live':route==='home'?'home':'stats';route=r;param=p;render();scrollTo(0,0)}
 function go(r,p){if(r==='bedit'){file=null;draft=p==='new'?{status:'draft',interval_seconds:5}:{...banners.find(a=>String(a.id)===String(p))};if(!draft)return}
  if(r==='edit'){file=null;draft=p==='new'?{status:'draft',cta:'تحميل',interval_seconds:6}:{...ads.find(a=>String(a.id)===String(p))};if(!draft)return}
  if(r==='invite'&&route!=='invite')inv={role:'editor',perms:['view','edit','stats'],code:null,email:'',name:''};show(r,p)}
-function render(){const views={login:loginView,activate:activateView,join:joinView,home:homeView,ads:adsView,edit:editorView,banners:bannersView,bedit:bannerEditorView,live:liveView,item:itemView,stats:statsView,members:membersView,invite:inviteView};
+function render(){const views={login:loginView,activate:activateView,join:joinView,home:homeView,ads:adsView,edit:editorView,banners:bannersView,bedit:bannerEditorView,live:liveView,item:itemView,stats:statsView,members:membersView,invite:inviteView,messages:messagesView};
  app.innerHTML=(views[route]||homeView)();const nav=$('#nav');const n=me&&!['login','activate','join'].includes(route)?navView():'';nav.innerHTML=n;nav.classList.toggle('hidden',!n);
- if(route==='ads')wireDrag();if(route==='banners')wireDrag('banners');if(route==='edit')wireEditor();if(route==='bedit')wireBannerEditor();wireForms()}
+ if(route==='ads')wireDrag();if(route==='banners')wireDrag('banners');if(route==='edit')wireEditor();if(route==='bedit')wireBannerEditor();if(route==='messages')wireMessages();wireForms()}
 function wireForms(){
  const lf=$('#loginForm');if(lf)lf.onsubmit=async e=>{e.preventDefault();const b=lf.querySelector('button[type=submit]');b.disabled=true;const{error}=await sb.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});b.disabled=false;if(error)return err(error);boot()};
  const fg=$('#forgot');if(fg)fg.onclick=async()=>{const e=$('#email').value.trim();if(!e)return toast('اكتب بريدك أولاً');const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.href.split('#')[0]});toast(error?'تعذّر الإرسال. اطلب من المدير رمز دعوة جديد.':'إن كان البريد مسجلاً فستصله رسالة لإعادة التعيين.')};
